@@ -10,6 +10,9 @@ namespace TER
 		Header* header = (Header*)ptr;
 		uint32 pos = Header::SIZE;
 
+		if (header->version != 2)
+			return luaL_argerror(L, 1, "unsupported .ter version");
+
 		lua_createtable(L, 0, 3); //to return
 
 		const char* string_block = (const char*)&ptr[pos];

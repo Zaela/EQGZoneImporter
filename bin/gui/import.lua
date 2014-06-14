@@ -81,9 +81,9 @@ function import_button:action()
 		end
 	end
 
-	DirNames(data)
+	DirNames(dir)
 
-	local ter_data = obj.Import(obj_path, data, (pos > #data))
+	local ter_data = obj.Import(obj_path, dir, (pos > #dir))
 	local zon_data = {
 		models = {ter_name},
 		objects = {{name = ter_name:sub(1, -5), id = 0, x = 0, y = 0, z = 0, rotation_x = 0, rotation_y = 0, rotation_z = 0, scale = 1}},

@@ -82,6 +82,17 @@ local function AddRegion()
 	end
 end
 
+local function CopyRegion()
+	if data and region then
+		local new = {}
+		for k, v in pairs(region) do
+			new[k] = v
+		end
+		table.insert(data, new)
+		list[tonumber(list.count) + 1] = new.name or "Unnamed"
+	end
+end
+
 local function DeleteRegion()
 	if data and active_pos then
 		table.remove(data, active_pos)
@@ -102,6 +113,8 @@ function list:button_cb(button, pressed, x, y)
 		local mx, my = iup.GetGlobal("CURSORPOS"):match("(%d+)x(%d+)")
 		local menu = iup.menu{
 			iup.item{title = "Add Region", action = AddRegion},
+			iup.item{title = "Copy Region", action = CopyRegion, active = region and "YES" or "NO"},
+			iup.separator{},
 			iup.item{title = "Remove Region", action = DeleteRegion, active = active_pos and "YES" or "NO"},
 		}
 		iup.Popup(menu, mx, my)

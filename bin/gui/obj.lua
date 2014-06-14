@@ -14,16 +14,16 @@ local function ReadMTL(path)
 	local cur
 
 	for line in f:lines() do
-		local cmd, args = line:match("(%S+)%s([^\n]+)")
+		local cmd, args = line:match("%s*(%S+)%s([^\n]+)")
 		if cmd and args then
 			cmd = cmd:lower()
 			if cmd == "newmtl" then
 				cur = {}
 				out[args] = cur
 			elseif cmd == "map_kd" then
-				cur.diffuse_map = args
+				cur.diffuse_map = args:match("[%w_]+%.%w+")
 			elseif cmd == "map_bump" then
-				cur.normal_map = args
+				cur.normal_map = args:match("[%w_]+%.%w+")
 			end
 		end
 	end
@@ -35,6 +35,12 @@ end
 
 function obj.Import(path, dir, appending)
 	local f = assert(io.open(path, "r"))
+	local fstr = f:read("*a")
+	f:seek("set")
+	local line_count = 0
+	for n in fstr:gmatch("\n") do
+		line_count = line_count + 1
+	end
 
 	local materials = {}
 	local vertices = {}
@@ -67,8 +73,11 @@ function obj.Import(path, dir, appending)
 		return a
 	end
 
+	local progress = iup.progressdlg{count = 0, totalcount = line_count, description = "Importing model..."}
+	progress:show()
+
 	for line in f:lines() do
-		local cmd, args = line:match("(%S+)%s([^\n]+)")
+		local cmd, args = line:match("%s*(%S+)%s([^\n]+)")
 		if cmd and args then
 			cmd = cmd:lower()
 			if mat_src then
@@ -93,10 +102,12 @@ function obj.Import(path, dir, appending)
 						mat_index = mat_index + 1
 						local tbl = {name = args, shader = "Opaque_MaxCB1.fx"}
 						if mat.diffuse_map then
-							tbl[1] = {name = "e_TextureDiffuse0", type = 2, value = mat.diffuse_map:lower()}
+							local v = mat.diffuse_map:lower()
+							tbl[1] = {name = "e_TextureDiffuse0", type = 2, value = v}
 						end
 						if mat.normal_map then
-							insert(tbl, {name = "e_TextureNormal0", type = 2, value = mat.normal_map:lower()})
+							local v = mat.normal_map:lower()
+							insert(tbl, {name = "e_TextureNormal0", type = 2, value = v})
 						end
 						insert(materials, tbl)
 					end
@@ -117,6 +128,7 @@ function obj.Import(path, dir, appending)
 				mat_src = ReadMTL(path:gsub("[^\\/]+%.%w+$", args))
 			end
 		end
+		progress.inc = 1
 	end
 
 	f:close()
@@ -155,6 +167,9 @@ function obj.Import(path, dir, appending)
 			end
 		end
 	end
+
+	progress:hide()
+	iup.Destroy(progress)
 
 	return {
 		materials = materials,

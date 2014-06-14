@@ -26,7 +26,7 @@ local displays = {
 }
 require "gui/loader"
 
-local title = "EQG Zone Importer v0.1"
+local title = "EQG Zone Importer v1.0"
 local window
 local tabs = iup.tabs{padding = "5x5"}
 
@@ -121,16 +121,12 @@ function Save(silent)
 	return true
 end
 
-local function DoSave()
-	Save()
-end
-
 local menu = iup.menu{
 	iup.submenu{
 		title = "&File";
 		iup.menu{
 			iup.item{title = "Open Zone EQG", action = OpenZoneFile},
-			iup.item{title = "&Save", action = DoSave},
+			iup.item{title = "&Save", action = function() Save() end},
 			iup.separator{},
 			iup.item{title = "&Quit", action = function() return iup.CLOSE end},
 		},

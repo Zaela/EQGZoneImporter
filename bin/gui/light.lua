@@ -78,6 +78,17 @@ local function AddLight()
 	end
 end
 
+local function CopyLight()
+	if data and light then
+		local new = {}
+		for k, v in pairs(light) do
+			new[k] = v
+		end
+		table.insert(data, new)
+		list[tonumber(list.count) + 1] = new.name or "Unnamed"
+	end
+end
+
 local function DeleteLight()
 	if data and active_pos then
 		table.remove(data, active_pos)
@@ -98,6 +109,8 @@ function list:button_cb(button, pressed, x, y)
 		local mx, my = iup.GetGlobal("CURSORPOS"):match("(%d+)x(%d+)")
 		local menu = iup.menu{
 			iup.item{title = "Add Light", action = AddLight},
+			iup.item{title = "Copy Light", action = CopyLight, active = light and "YES" or "NO"},
+			iup.separator{},
 			iup.item{title = "Remove Light", action = DeleteLight, active = active_pos and "YES" or "NO"},
 		}
 		iup.Popup(menu, mx, my)
