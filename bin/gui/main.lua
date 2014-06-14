@@ -121,12 +121,39 @@ function Save(silent)
 	return true
 end
 
+local function NewEQGArchive()
+	local dlg = iup.filedlg{title = "Select location and name for new EQG archive.", dialogtype = "SAVE",
+		extfilter = "EQG Files (*.eqg)|*.eqg|All Files|*.*|"}
+	iup.Popup(dlg)
+	if dlg.status ~= "-1" then
+		local path = dlg.value
+		if path and path ~= "" then
+			--ensure file extension is .eqg
+			if not path:match("%.eqg$") then
+				path = path:match("([^%.]+)%.?%w*")
+				path = path .. ".eqg"
+			end
+			local s, err = pcall(eqg.WriteDirectory, path, {})
+			if not s then
+				iup.Destroy(dlg)
+				return error_popup(err)
+			end
+			local msg = iup.messagedlg{title = "Created EQG", value = "Successfully created '".. path .."'"}
+			iup.Popup(msg)
+			iup.Destroy(msg)
+		end
+	end
+	iup.Destroy(dlg)
+end
+
 local menu = iup.menu{
 	iup.submenu{
 		title = "&File";
 		iup.menu{
 			iup.item{title = "Open Zone EQG", action = OpenZoneFile},
 			iup.item{title = "&Save", action = function() Save() end},
+			iup.separator{},
+			iup.item{title = "New EQG Archive", action = NewEQGArchive},
 			iup.separator{},
 			iup.item{title = "&Quit", action = function() return iup.CLOSE end},
 		},
