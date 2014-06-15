@@ -1,7 +1,18 @@
 
 local list = iup.list{visiblecolumns = 12, visiblelines = 15, expand = "VERTICAL"}
-local data, region, fields, active_pos
+local data, region, fields, active_pos, type_list
 local tonumber = tonumber
+
+local is_type = {
+	AWT = 1, --water
+	ALV = 2, --lava
+	APK = 3, --pvp
+	ATP = 4, --zoneline
+	ASL = 5, --ice
+	APV = 6, --generic
+}
+
+local type_name = {"AWT_", "ALV_", "APK_", "ATP_", "ASL_", "APV_", ""}
 
 function list:action(str, pos, state)
 	if state == 1 and data then
@@ -10,19 +21,40 @@ function list:action(str, pos, state)
 		for k, field in pairs(fields) do
 			field.value = region[k]
 		end
+		local name = region.name
+		local t = name:sub(1, 3)
+		local v = is_type[t]
+		if v then
+			type_list.value = v
+			fields.name.value = name:sub(4):match("_?(.+)")
+		else
+			type_list.value = 7
+		end
 	end
 end
 
 local function Edited()
 	if region then
 		for k, field in pairs(fields) do
-			region[k] = (k == "name") and field.value or tonumber(field.value)
+			if k == "name" then
+				local n = tonumber(type_list.value)
+				if not n or n < 1 then
+					n = 7
+				end
+				region.name = type_name[n] .. field.value
+			else
+				region[k] = tonumber(field.value)
+			end
 		end
 		if active_pos then
 			list[active_pos] = fields.name.value or ""
 		end
 	end
 end
+
+type_list = iup.list{visiblecolumns = 14, valuechanged_cb = Edited, dropdown = "YES", visible_items = 8,
+	"Water", "Lava", "PVP", "Zoneline", "Ice", "Generic", "Unknown",
+}
 
 fields = {
 	name = iup.text{visiblecolumns = 16, valuechanged_cb = Edited},
@@ -38,6 +70,7 @@ fields = {
 }
 
 local grid = iup.gridbox{
+	iup.label{title = "Type"}, type_list,
 	iup.label{title = "Name"}, fields.name,
 	iup.label{title = "Center X"}, fields.center_x,
 	iup.label{title = "Center Y"}, fields.center_y,
@@ -64,7 +97,13 @@ local function read(ter_data, zon_data)
 	list.autoredraw = "NO"
 	list[1] = nil
 	for i, reg in ipairs(zon_data.regions) do
-		list[i] = reg.name
+		local name = reg.name
+		local t = name:sub(1, 3)
+		if is_type[t] then
+			list[i] = name:sub(4):match("_?(.+)")
+		else
+			list[i] = name
+		end
 	end
 	list.autoredraw = "YES"
 	ClearFields()
