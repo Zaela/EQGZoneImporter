@@ -24,6 +24,7 @@ local grid = iup.gridbox{
 }
 
 local function load(ter_data, zon_data)
+	if not ter_data or not zon_data then return end
 	fields.mat_count.value = #ter_data.materials
 	local vert = ter_data.vertices
 	fields.vert_count.value = vert.binary and vert.count or #vert
