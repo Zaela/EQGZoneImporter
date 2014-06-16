@@ -10,6 +10,7 @@
 #include "ter.h"
 #include "zon.h"
 #include "mod.h"
+#include "wld.h"
 #include "util.h"
 #include "types.h"
 
@@ -46,6 +47,7 @@ int main()
 	TER::LoadFunctions(L);
 	ZON::LoadFunctions(L);
 	MOD::LoadFunctions(L);
+	WLD::LoadFunctions(L);
 	Util::LoadFunctions(L);
 
 	if (luaL_loadfile(L, "gui/main.lua") != 0)

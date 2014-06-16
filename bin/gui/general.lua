@@ -30,14 +30,26 @@ local function load(ter_data, zon_data)
 	fields.vert_count.value = vert.binary and vert.count or #vert
 	local tri = ter_data.triangles
 	fields.tri_count.value = tri.binary and tri.count or #tri
-	fields.model_count.value = #zon_data.models
+
+	local mod_count = 0
+	local dir = open_dir
+	if dir then
+		for i, ent in ipairs(dir) do
+			local name = ent.name
+			if name:find("%.mod$") or name:find("%.ter$") then
+				mod_count = mod_count + 1
+			end
+		end
+	end
+
+	fields.model_count.value = mod_count
 	fields.obj_count.value = #zon_data.objects
 	fields.region_count.value = #zon_data.regions
 	fields.light_count.value = #zon_data.lights
 end
 
 local function read(ter_data, zon_data, zone_name)
-	fields.name.value = zone_name
+	fields.name.value = zone_name or ""
 	load(ter_data, zon_data)
 end
 

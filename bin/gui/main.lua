@@ -25,6 +25,7 @@ local displays = {
 	require "gui/import",
 }
 require "gui/loader"
+require "gui/s3d"
 
 local title = "EQG Zone Importer v1.0"
 local window
@@ -156,6 +157,12 @@ local menu = iup.menu{
 			iup.item{title = "New EQG Archive", action = NewEQGArchive},
 			iup.separator{},
 			iup.item{title = "&Quit", action = function() return iup.CLOSE end},
+		},
+	},
+	iup.submenu{
+		title = "Utility";
+		iup.menu{
+			iup.item{title = "Convert S3D Zone", action = s3d.ConvertZone},
 		},
 	},
 }

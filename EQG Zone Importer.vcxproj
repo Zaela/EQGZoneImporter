@@ -71,6 +71,7 @@
     <ClCompile Include="src\mod.cpp" />
     <ClCompile Include="src\ter.cpp" />
     <ClCompile Include="src\util.cpp" />
+    <ClCompile Include="src\wld.cpp" />
     <ClCompile Include="src\zon.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -79,6 +80,7 @@
     <ClInclude Include="src\ter.h" />
     <ClInclude Include="src\types.h" />
     <ClInclude Include="src\util.h" />
+    <ClInclude Include="src\wld.h" />
     <ClInclude Include="src\zon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
