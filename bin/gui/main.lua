@@ -27,7 +27,7 @@ local displays = {
 require "gui/loader"
 require "gui/s3d"
 
-local title = "EQG Zone Importer v1.0"
+local title = "EQG Zone Importer v1.0c"
 local window
 local tabs = iup.tabs{padding = "5x5"}
 

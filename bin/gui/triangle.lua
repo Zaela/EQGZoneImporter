@@ -1,4 +1,6 @@
 
+require "gui/flag_editor"
+
 local list = iup.list{visiblecolumns = 8, visiblelines = 15, expand = "VERTICAL"}
 local vertices, triangles, materials, ClearFields, active_pos
 
@@ -37,7 +39,7 @@ local toggles = {}
 
 local grid3 = iup.gridbox{
 	numdiv = 8, orientation = "HORIZONTAL", homogeneouslin = "YES",
-	gapcol = 10, gaplin = 8, alignmentlin = "ACENTER", sizelin = 7
+	gapcol = 10, gaplin = 8, alignmentlin = "ACENTER", sizelin = 0
 }
 
 local function SaveFlag()
@@ -63,10 +65,14 @@ local function SetFlag()
 	SaveFlag()
 end
 
+local toggle_names = {
+	[1] = "Permeable",
+}
+
 for i = 1, 32 do
 	local t = iup.toggle{value = "OFF", valuechanged_cb = SetFlag}
 	toggles[i] = t
-	iup.Append(grid3, l("Bit".. i))
+	iup.Append(grid3, l(toggle_names[i] or ("Bit".. i)))
 	iup.Append(grid3, t)
 end
 
@@ -172,9 +178,21 @@ function ClearFields()
 	flag_field.value = ""
 end
 
+local flag_editor_button = iup.button{title = "Flag Editor", padding = "10x0",
+	action = function()
+		if triangles and materials then
+			StartFlagEditor(triangles, materials)
+		end
+	end,
+}
+
 return {
 	name = "Triangles",
-	display = iup.hbox{list, iup.vbox{grid, grid2, grid3; gap = 20}; nmargin = "10x10", gap = 10},
+	display = iup.hbox{list, iup.vbox{
+		grid, grid2, iup.hbox{
+			grid3, flag_editor_button; gap = 30, alignment = "ACENTER",
+		}; gap = 20};
+		nmargin = "10x10", gap = 10},
 	read = read,
 	load = load,
 }
