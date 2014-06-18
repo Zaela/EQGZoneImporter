@@ -52,9 +52,7 @@ function s3d.ConvertZone()
 								{name = "e_TextureDiffuse0", type = 2, value = tex}}
 						end
 						--s3d has winding order backwards
-						local temp = tri[1]
-						tri[1] = tri[3]
-						tri[3] = temp
+						tri[1], tri[3] = tri[3], tri[1]
 						tri.material = id
 						tri.flag = 65536
 					end

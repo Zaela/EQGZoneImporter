@@ -50,7 +50,8 @@ function obj.Import(path, dir, appending)
 	local norm_src = {}
 	local vert_mem = {}
 	local in_object, mat_src
-	local mat_index = -1
+	local mat_index = {}
+	local cur_index
 
 	local face = function(str)
 		local a = vert_mem[str]
@@ -97,19 +98,23 @@ function obj.Import(path, dir, appending)
 						insert(norm_src, {i = tonumber(i), j = tonumber(j), k = tonumber(k)})
 					end
 				elseif cmd == "usemtl" then
-					local mat = mat_src[args]
-					if mat then
-						mat_index = mat_index + 1
-						local tbl = {name = args, shader = "Opaque_MaxCB1.fx"}
-						if mat.diffuse_map then
-							local v = mat.diffuse_map:lower()
-							tbl[1] = {name = "e_TextureDiffuse0", type = 2, value = v}
+					cur_index = mat_index[args]
+					if not cur_index then
+						cur_index = #materials
+						mat_index[args] = cur_index
+						local mat = mat_src[args]
+						if mat then
+							local tbl = {name = args, shader = "Opaque_MaxCB1.fx"}
+							if mat.diffuse_map then
+								local v = mat.diffuse_map:lower()
+								tbl[1] = {name = "e_TextureDiffuse0", type = 2, value = v}
+							end
+							if mat.normal_map then
+								local v = mat.normal_map:lower()
+								insert(tbl, {name = "e_TextureNormal0", type = 2, value = v})
+							end
+							insert(materials, tbl)
 						end
-						if mat.normal_map then
-							local v = mat.normal_map:lower()
-							insert(tbl, {name = "e_TextureNormal0", type = 2, value = v})
-						end
-						insert(materials, tbl)
 					end
 				elseif cmd == "f" then
 					local v1, v2, v3 = args:match("(%d+/%d*/%d+) (%d+/%d*/%d+) (%d+/%d*/%d+)")
@@ -119,7 +124,7 @@ function obj.Import(path, dir, appending)
 							[1] = a,
 							[2] = b,
 							[3] = c,
-							material = mat_index,
+							material = cur_index,
 							flag = 65536,
 						})
 					end
