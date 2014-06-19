@@ -100,6 +100,7 @@ local function read(ter_data, zon_data)
 		end
 	end
 	name_data = names
+	zon_data.models = names
 
 	model_list.autoredraw = "NO"
 	model_list[1] = nil
