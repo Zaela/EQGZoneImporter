@@ -183,4 +183,128 @@ function obj.Import(path, dir, appending)
 	}
 end
 
+local format = string.format
+
+function obj.Export()
+	local ter_data = active_ter
+	local zonename = zone_name
+	local dir = open_dir
+	if not ter_data or not zonename or not dir then return end
+
+	local dlg = iup.filedlg{title = "Select destination folder", dialogtype = "DIR"}
+	iup.Popup(dlg)
+	if dlg.status ~= "-1" then
+		local folder = dlg.value .. "/"
+
+		local materials = ter_data.materials
+		local triangles = ter_data.triangles
+		local vertices = ter_data.vertices
+		local exported = {}
+
+		local ExportImage = function(name)
+			if not exported[name] then
+				exported[name] = true
+				for i, ent in ipairs(dir) do
+					if ent.name == name then
+						local s, err = pcall(eqg.OpenEntry, ent)
+						if s then
+							pcall(eqg.ExportFile, folder .. name, ent)
+						end
+						break
+					end
+				end
+			end
+		end
+
+		local f = assert(io.open(folder .. zonename .. ".mtl", "w+"))
+		f:write("# Exported by EQG Zone Importer v1.1\n\n")
+		for i, mat in ipairs(materials) do
+			f:write("newmtl ", mat.name, "\n")
+			f:write("Ka 1.000000 1.000000 1.000000\nKd 1.000000 1.000000 1.000000\nd 1.000000\nillum 2\n")
+			for _, prop in ipairs(mat) do
+				local name, value = prop.name, prop.value
+				if name == "e_TextureDiffuse0" then
+					f:write("map_Kd ", value, "\n")
+					ExportImage(value)
+				elseif name == "e_TextureNormal0" then
+					f:write("map_Bump ", value, "\n")
+					ExportImage(value)
+				end
+			end
+			f:write("\n")
+		end
+		f:close()
+
+		f = assert(io.open(folder .. zonename .. ".obj", "w+"))
+		f:write("# Exported by EQG Zone Importer v1.1\n")
+		f:write("mtllib ", zonename, ".mtl\no ", zonename, "\n")
+
+		if vertices.binary then
+			local x, y, z, u, v, i, j, k
+			local c = vertices.count - 1
+			for i = 0, c do
+				x, y, z = util.GetVertex(vertices, i)
+				f:write("v ", format("%.6f %.6f %.6f\n", x, y, z))
+			end
+			for i = 0, c do
+				x, y, z, u, v = util.GetVertex(vertices, i)
+				f:write("vt ", format("%.6f %.6f\n", u, v))
+			end
+			for i = 0, c do
+				x, y, z, u, v, i, j, k = util.GetVertex(vertices, i)
+				f:write("vn ", format("%.6f %.6f %.6f\n", i, j, k))
+			end
+		else
+			for i, vert in ipairs(vertices) do
+				f:write("v ", format("%.6f %.6f %.6f\n", vert.x, vert.y, vert.z))
+			end
+			for i, vert in ipairs(vertices) do
+				f:write("vt ", format("%.6f %.6f\n", vert.u, vert.v))
+			end
+			for i, vert in ipairs(vertices) do
+				f:write("vn ", format("%.6f %.6f %.6f\n", vert.i, vert.j, vert.k))
+			end
+		end
+
+		local mat_id = -1
+		if triangles.binary then
+			for i = 0, triangles.count - 1 do
+				local v1, v2, v3, mat = util.GetTriangle(triangles, i)
+				if mat ~= mat_id then
+					mat_id = mat
+					if mat_id ~= -1 then
+						f:write("usemtl ", materials[mat_id + 1].name, "\ns off\n")
+					end
+				end
+				--obj is 1-indexed
+				v1 = v1 + 1
+				v2 = v2 + 1
+				v3 = v3 + 1
+				f:write("f ", v1, "/", v1, "/", v1, " ", v2, "/", v2, "/", v2, " ", v3, "/", v3, "/", v3, "\n")
+			end
+		else
+			for i, tri in ipairs(triangles) do
+				if tri.material ~= mat_id then
+					mat_id = tri.material
+					if mat_id ~= -1 then
+						f:write("usemtl ", materials[mat_id + 1].name, "\ns off\n")
+					end
+				end
+				local v1, v2, v3 = tri[1], tri[2], tri[3]
+				--obj is 1-indexed
+				v1 = v1 + 1
+				v2 = v2 + 1
+				v3 = v3 + 1
+				f:write("f ", v1, "/", v1, "/", v1, " ", v2, "/", v2, "/", v2, " ", v3, "/", v3, "/", v3, "\n")
+			end
+		end
+		f:close()
+
+		local msg = iup.messagedlg{title = "Export Complete", value = "Successfully exported ".. zonename .." to .obj format."}
+		iup.Popup(msg)
+		iup.Destroy(msg)
+	end
+	iup.Destroy(dlg)
+end
+
 return obj

@@ -119,27 +119,37 @@ namespace Util
 		return str;
 	}
 
+	uint32 AddName(lua_State* L, const char* id, Buffer& name_buf, FoundNamesMap& found_names)
+	{
+		uint32 len;
+		const char* name = GetString(L, -1, id, len);
+		if (found_names.count(name))
+		{
+			return found_names[name];
+		}
+		uint32 pos = name_buf.GetLen();
+		found_names[name] = pos;
+		name_buf.Add(name, len);
+		return pos;
+	}
+
 	void WriteGeometry(lua_State* L, Buffer& data_buf, Buffer& name_buf, uint32& mat_count, uint32& vert_count, uint32& tri_count)
 	{
+		FoundNamesMap found_names;
+
 		lua_getfield(L, 1, "materials");
 		uint32 count = lua_objlen(L, -1);
 		mat_count = count;
 		for (uint32 i = 1; i <= count; ++i)
 		{
-			uint32 len;
-			const char* name;
 			lua_pushinteger(L, i);
 			lua_gettable(L, -2);
 
 			Material mat;
 			mat.index = i - 1;
 			
-			name = GetString(L, -1, "name", len);
-			mat.name_index = name_buf.GetLen();
-			name_buf.Add(name, len);
-			name = GetString(L, -1, "shader", len);
-			mat.shader_index = name_buf.GetLen();
-			name_buf.Add(name, len);
+			mat.name_index = AddName(L, "name", name_buf, found_names);
+			mat.shader_index = AddName(L, "shader", name_buf, found_names);
 
 			mat.property_count = lua_objlen(L, -1);
 			data_buf.Add(&mat, Material::SIZE);
@@ -150,9 +160,7 @@ namespace Util
 				lua_gettable(L, -2);
 
 				Property prop;
-				name = GetString(L, -1, "name", len);
-				prop.name_index = name_buf.GetLen();
-				name_buf.Add(name, len);
+				prop.name_index = AddName(L, "name", name_buf, found_names);
 				prop.type = GetInt(L, -1, "type");
 				if (prop.type == 0)
 				{
@@ -167,9 +175,7 @@ namespace Util
 				}
 				else
 				{
-					name = GetString(L, -1, "value", len);
-					prop.value.i = name_buf.GetLen();
-					name_buf.Add(name, len);
+					prop.value.i = AddName(L, "value", name_buf, found_names);
 				}
 
 				data_buf.Add(&prop, Property::SIZE);
@@ -313,13 +319,18 @@ namespace Util
 		lua_getfield(L, 1, "data");
 		byte* data = (byte*)lua_touserdata(L, -1);
 
-		float x, y, z;
+		float x, y, z, u, v, i, j, k;
 		if (version < 3)
 		{
 			Vertex* vert = (Vertex*)&data[key * Vertex::SIZE];
 			x = vert->x;
 			y = vert->y;
 			z = vert->z;
+			u = vert->u;
+			v = vert->v;
+			i = vert->i;
+			j = vert->j;
+			k = vert->k;
 		}
 		else
 		{
@@ -327,12 +338,22 @@ namespace Util
 			x = vert->x;
 			y = vert->y;
 			z = vert->z;
+			u = vert->u;
+			v = vert->v;
+			i = vert->i;
+			j = vert->j;
+			k = vert->k;
 		}
 
 		lua_pushnumber(L, x);
 		lua_pushnumber(L, y);
 		lua_pushnumber(L, z);
-		return 3;
+		lua_pushnumber(L, u);
+		lua_pushnumber(L, v);
+		lua_pushnumber(L, i);
+		lua_pushnumber(L, j);
+		lua_pushnumber(L, k);
+		return 8;
 	}
 
 	int TriangleLookup(lua_State* L)

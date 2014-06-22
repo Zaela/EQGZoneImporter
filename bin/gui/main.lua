@@ -1,6 +1,7 @@
 
 local lfs = require "lfs"
 local eqg = require "luaeqg"
+local obj = require "gui/obj"
 
 function assert(result, msg)
 	if result then return result end
@@ -27,7 +28,7 @@ local displays = {
 require "gui/loader"
 require "gui/s3d"
 
-local title = "EQG Zone Importer v1.0c"
+local title = "EQG Zone Importer v1.1"
 local window
 local tabs = iup.tabs{padding = "5x5"}
 
@@ -57,6 +58,7 @@ local function OpenZoneFile()
 			if ter_data and zon_data and name then
 				active_ter = ter_data
 				active_zon = zon_data
+				zone_name = name
 				for i, d in ipairs(displays) do
 					d.read(ter_data, zon_data, name, path)
 				end
@@ -76,6 +78,7 @@ function LoadFromImport(ter_data, zon_data, name, path)
 	for i, d in ipairs(displays) do
 		d.read(ter_data, zon_data, name, path)
 	end
+	zone_name = name
 	window.title = title .." - ".. name
 	tabs:tabchangepos_cb(tabs.valuepos)
 	local f = assert(io.open("gui/settings.lua", "w+"))
@@ -163,6 +166,7 @@ local menu = iup.menu{
 		title = "Utility";
 		iup.menu{
 			iup.item{title = "Convert S3D Zone", action = s3d.ConvertZone},
+			iup.item{title = "Export Zone", action = obj.Export},
 		},
 	},
 }
@@ -186,6 +190,7 @@ local function LoadSettings()
 			if ter_data and zon_data and name then
 				active_ter = ter_data
 				active_zon = zon_data
+				zone_name = name
 				for i, d in ipairs(displays) do
 					d.read(ter_data, zon_data, name, path)
 				end

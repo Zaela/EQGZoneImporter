@@ -6,6 +6,7 @@
 #include "geo.h"
 #include <cstdio>
 #include <cstring>
+#include <unordered_map>
 #include <lua.hpp>
 
 namespace Util
@@ -39,6 +40,19 @@ namespace Util
 		uint32 mCap;
 		byte* mData;
 	};
+
+	class MSVC2010Sucks_Cmp
+	{
+	public:
+		bool operator()(const std::string& a, const std::string& b) const
+		{
+			return (a.compare(b) == 0);
+		}
+	};
+
+	typedef std::unordered_map<std::string, uint32, std::hash<std::string>, MSVC2010Sucks_Cmp> FoundNamesMap;
+
+	uint32 AddName(lua_State* L, const char* id, Buffer& name_buf, FoundNamesMap& found_names);
 }
 
 #endif//UTIL_H
