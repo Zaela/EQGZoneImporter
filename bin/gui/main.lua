@@ -66,7 +66,9 @@ local function OpenZoneFile()
 				tabs:tabchangepos_cb(tabs.valuepos)
 			end
 			local f = assert(io.open("gui/settings.lua", "w+"))
-			f:write("\nreturn \"".. (path:gsub("\\", "\\\\")) .."\"\n")
+			f:write("\nsettings = {\n\tfolder = \"", (path:gsub("\\", "\\\\")), "\",\n")
+			f:write("\tviewer = {\n\t\twidth = ", v and v.width or 600, ",\n\t\theight = ", v and v.height or 400, ",\n")
+			f:write("\t}\n}\n")
 			f:close()
 		end
 	end
@@ -82,7 +84,9 @@ function LoadFromImport(ter_data, zon_data, name, path)
 	window.title = title .." - ".. name
 	tabs:tabchangepos_cb(tabs.valuepos)
 	local f = assert(io.open("gui/settings.lua", "w+"))
-	f:write("\nreturn \"".. (path:gsub("\\", "\\\\")) .."\"\n")
+	f:write("\nsettings = {\n\tfolder = \"", (path:gsub("\\", "\\\\")), "\",\n")
+	f:write("\tviewer = {\n\t\twidth = ", v and v.width or 600, ",\n\t\theight = ", v and v.height or 400, ",\n")
+	f:write("\t}\n}\n")
 	f:close()
 end
 
@@ -150,6 +154,39 @@ local function NewEQGArchive()
 	iup.Destroy(dlg)
 end
 
+local function StartViewer()
+	local ter_data = active_ter
+	local zon_data = active_zon
+	local dir = open_dir
+	if not ter_data or not zon_data or not dir then return end
+
+	ter.Arrayize(ter_data.vertices, ter_data.triangles)
+
+	local textures = {}
+	--find and decompress all diffuse textures in the materials
+	for i, mat in ipairs(ter_data.materials) do
+		for j, prop in ipairs(mat) do
+			if prop.name == "e_TextureDiffuse0" then
+				local name = prop.value:lower()
+				for k, ent in ipairs(dir) do
+					if ent.name == name then
+						local s, err = pcall(eqg.OpenEntry, ent)
+						if s then
+							ent.png_name = name:match("[^%.]+") .. ".png"
+							ent.isDDS = (name:sub(-3) == "dds")
+							textures[i] = ent
+						end
+						break
+					end
+				end
+				break
+			end
+		end
+	end
+
+	viewer.LoadZone(ter_data.vertices, ter_data.triangles, textures)
+end
+
 local menu = iup.menu{
 	iup.submenu{
 		title = "&File";
@@ -169,6 +206,14 @@ local menu = iup.menu{
 			iup.item{title = "Export Zone", action = obj.Export},
 		},
 	},
+	iup.submenu{
+		title = "Viewer";
+		iup.menu{
+			iup.item{title = "Start Viewer", action = StartViewer},
+			iup.separator{},
+			iup.item{title = "Close Viewer", action = viewer.Close},
+		},
+	},
 }
 
 window = assert(iup.dialog{iup.hbox{tabs; nmargin = "10x10"}; title = title, menu = menu})
@@ -180,19 +225,19 @@ function window:k_any(key)
 end
 
 local function LoadSettings()
-	local settings = loadfile("gui/settings.lua")
-	if settings then
-		local path = settings()
-		if path then
-			open_path = path
-			local name = path:match("([%w_]+)%.%w+$")
-			local ter_data, zon_data = LoadZone(path)
+	local set = loadfile("gui/settings.lua")
+	if set then
+		set()
+		if settings and settings.folder then
+			open_path = settings.folder
+			local name = open_path:match("([%w_]+)%.%w+$")
+			local ter_data, zon_data = LoadZone(open_path)
 			if ter_data and zon_data and name then
 				active_ter = ter_data
 				active_zon = zon_data
 				zone_name = name
 				for i, d in ipairs(displays) do
-					d.read(ter_data, zon_data, name, path)
+					d.read(ter_data, zon_data, name, open_path)
 				end
 				window.title = title .." - ".. name
 				tabs:tabchangepos_cb(tabs.valuepos)

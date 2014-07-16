@@ -26,11 +26,33 @@ local function Edited()
 		end
 	end
 	if material then
+		local f = assert(io.open("test.txt", "a+"))
+		f:write(shader.value, " - ")
 		material.shader = shader.value
+		f:write(material.shader, "\r\n")
+		f:close()
 	end
 end
 
-shader = iup.text{visiblecolumns = 16, valuechanged_cb = Edited}
+shader = iup.list{visiblecolumns = 14, --[[valuechanged_cb = Edited,]] dropdown = "YES", editbox = "YES", visible_items = 15,
+	"OpaqueMPLBasic.fx", "OpaqueMPLBump.fx", "OpaqueCBSGE1.fx", "OpaqueCBGG1.fx", "OpaqueCBSG1.fx", "OpaqueCBS1.fx",
+	"OpaqueCB1.fx", "OpaqueCE1.fx", "AlphaMPLBasic.fx", "AlphaMPLBlendNoBump.fx", "AlphaMPLBlend.fx", "AlphaMPLFull2UV.fx",
+	"AlphaMPLFull.fx", "AlphaMPLBump2UV.fx", "AlphaMPLBump.fx", "AlphaMPLSB2UV.fx", "AlphaMPLSB.fx", "AlphaMPLGB2UV.fx",
+	"AlphaMPLGB.fx", "AlphaMPLRB2UV.fx", "AlphaMPLRB.fx", "AlphaC1DTP.fx", "AlphaCBSG1_2UV.fx", "AlphaCBST2_2UV.fx",
+	"AlphaCB1_2UV.fx", "AlphaC1_2UV.fx", "AlphaCBGGE1.fx", "AlphaCBSGE1.fx", "AlphaCBSE1.fx", "AlphaCBE1.fx",
+	"AlphaCBGG1.fx", "AlphaCBSG1.fx", "AlphaVSB.fx", "AlphaCBS1.fx", "AlphaCBS_2UV.fx", "AlphaCB1.fx", "AlphaCE1.fx",
+	"AlphaCG1.fx", "ChromaMPLBasic.fx", "ChromaCBSGE1.fx", "ChromaCBGG1.fx", "ChromaCBSG1.fx", "ChromaVSB.fx",
+	"ChromaCBS1.fx", "ChromaCB1.fx", "ChromaCE1.fx", "ChromaCG1.fx", "AddAlphaCBSGE1.fx", "AddAlphaCBGG1.fx",
+	"AddAlphaCBSG1.fx", "AddAlphaCBS1.fx", "AddAlphaCB1.fx", "AddAlphaCE1.fx", "AddAlphaCG1.fx", "WaterFall.fx",
+	"Water.fx", "Terrain.fx", "Lava.fx", "Lava2.fx",
+	valuechanged_cb = function()
+		--for some dumb reason this does't get the updated values like it does for everything else
+		iup.SetIdle(function()
+			Edited()
+			iup.SetIdle(nil)
+		end)
+	end,
+}
 
 function mat_list:action(str, pos, state)
 	if state == 1 and data then

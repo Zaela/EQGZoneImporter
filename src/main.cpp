@@ -1,6 +1,10 @@
 
 #include <lua.hpp>
 #include <cstdio>
+#include <irrlicht.h>
+#include <thread>
+#include <atomic>
+#include <vector>
 
 #include <iup.h>
 #include <iuplua.h>
@@ -11,12 +15,17 @@
 #include "zon.h"
 #include "mod.h"
 #include "wld.h"
+#include "viewer.h"
 #include "util.h"
 #include "types.h"
 
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
+//globals
+std::thread* gViewerThread;
+std::atomic_flag gRunThread;
 
 void ShowError(const char* fmt, const char* str)
 {
@@ -36,6 +45,9 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance,
 int main()
 #endif
 {
+	gViewerThread = nullptr;
+	gRunThread.clear();
+
 	lua_State* L = luaL_newstate();
 	luaL_openlibs(L);
 
@@ -48,6 +60,7 @@ int main()
 	ZON::LoadFunctions(L);
 	MOD::LoadFunctions(L);
 	WLD::LoadFunctions(L);
+	Viewer::LoadFunctions(L);
 	Util::LoadFunctions(L);
 
 	if (luaL_loadfile(L, "gui/main.lua") != 0)

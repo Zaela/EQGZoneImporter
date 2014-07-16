@@ -184,6 +184,7 @@ function obj.Import(path, dir, appending)
 end
 
 local format = string.format
+local util = util
 
 function obj.Export()
 	local ter_data = active_ter
@@ -266,6 +267,7 @@ function obj.Export()
 			end
 		end
 
+		local group = 0
 		local mat_id = -1
 		if triangles.binary then
 			for i = 0, triangles.count - 1 do
@@ -273,7 +275,8 @@ function obj.Export()
 				if mat ~= mat_id then
 					mat_id = mat
 					if mat_id ~= -1 then
-						f:write("usemtl ", materials[mat_id + 1].name, "\ns off\n")
+						f:write("usemtl ", materials[mat_id + 1].name, "\ns off\ng piece", group, "\n")
+						group = group + 1
 					end
 				end
 				--obj is 1-indexed
@@ -287,7 +290,8 @@ function obj.Export()
 				if tri.material ~= mat_id then
 					mat_id = tri.material
 					if mat_id ~= -1 then
-						f:write("usemtl ", materials[mat_id + 1].name, "\ns off\n")
+						f:write("usemtl ", materials[mat_id + 1].name, "\ns off\ng piece", group, "\n")
+						group = group + 1
 					end
 				end
 				local v1, v2, v3 = tri[1], tri[2], tri[3]

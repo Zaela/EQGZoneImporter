@@ -130,9 +130,104 @@ namespace TER
 		return Util::FinishWrite(L, buf);
 	}
 
+	int Arrayize(lua_State* L)
+	{
+		//vertex table, triangle table
+		luaL_checktype(L, 1, LUA_TTABLE);
+		luaL_checktype(L, 2, LUA_TTABLE);
+
+		//vertices
+		lua_getfield(L, 1, "binary");
+		if (lua_toboolean(L, -1) == false)
+		{
+			int count = lua_objlen(L, 1);
+			lua_pushboolean(L, true);
+			lua_setfield(L, 1, "binary");
+			lua_pushinteger(L, count);
+			lua_setfield(L, 1, "count");
+			lua_pushinteger(L, 2);
+			lua_setfield(L, 1, "version");
+			uint32 len = count * Vertex::SIZE;
+			byte* block = (byte*)lua_newuserdata(L, len);
+			uint32 pos = 0;
+
+			for (int i = 1; i <= count; ++i)
+			{
+				lua_pushinteger(L, i);
+				lua_gettable(L, 1);
+
+				Vertex* v = (Vertex*)&block[pos];
+				pos += Vertex::SIZE;
+
+				v->x = Util::GetFloat(L, -1, "x");
+				v->y = Util::GetFloat(L, -1, "y");
+				v->z = Util::GetFloat(L, -1, "z");
+				v->i = Util::GetFloat(L, -1, "i");
+				v->j = Util::GetFloat(L, -1, "j");
+				v->k = Util::GetFloat(L, -1, "k");
+				v->u = Util::GetFloat(L, -1, "u");
+				v->v = Util::GetFloat(L, -1, "v");
+
+				lua_pop(L, 1);
+			}
+	
+			lua_setfield(L, 1, "data");
+		}
+
+		//triangles
+		lua_getfield(L, 2, "binary");
+		if (lua_toboolean(L, -1) == false)
+		{
+			int count = lua_objlen(L, 2);
+			lua_pushboolean(L, true);
+			lua_setfield(L, 2, "binary");
+			lua_pushinteger(L, count);
+			lua_setfield(L, 2, "count");
+			lua_pushinteger(L, 2);
+			lua_setfield(L, 2, "version");
+			uint32 len = count * Triangle::SIZE;
+			byte* block = (byte*)lua_newuserdata(L, len);
+			uint32 pos = 0;
+
+			for (int i = 1; i <= count; ++i)
+			{
+				lua_pushinteger(L, i);
+				lua_gettable(L, 2);
+
+				Triangle* tri = (Triangle*)&block[pos];
+				pos += Triangle::SIZE;
+
+				lua_pushinteger(L, 1);
+				lua_gettable(L, -2);
+				tri->index[0] = lua_tointeger(L, -1);
+				lua_pop(L, 1);
+				lua_pushinteger(L, 2);
+				lua_gettable(L, -2);
+				tri->index[1] = lua_tointeger(L, -1);
+				lua_pop(L, 1);
+				lua_pushinteger(L, 3);
+				lua_gettable(L, -2);
+				tri->index[2] = lua_tointeger(L, -1);
+				lua_pop(L, 1);
+				
+				lua_getfield(L, -1, "material");
+				tri->material = lua_tointeger(L, -1);
+				lua_pop(L, 1);
+				tri->flag = Util::GetInt(L, -1, "flag");
+
+				lua_pop(L, 1);
+			}
+	
+			lua_setfield(L, 2, "data");
+		}
+
+		return 0;
+	}
+
 	static const luaL_Reg funcs[] = {
 		{"Read", Read},
 		{"Write", Write},
+		{"Arrayize", Arrayize},
 		{nullptr, nullptr}
 	};
 
