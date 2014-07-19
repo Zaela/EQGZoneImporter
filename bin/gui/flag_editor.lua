@@ -1,5 +1,6 @@
 
 local bit = require "bit"
+local toggles = require "gui/toggles"
 
 local triangles
 local util = util
@@ -24,23 +25,7 @@ local by_range_toggle = iup.toggle{value = "OFF",
 local mode_list = iup.list{visiblecolumns = 12, dropdown = "YES",
 	"Overwrite Flags", "Set Selected Bits", value = 1}
 
-local toggles = {}
-
-local toggle_grid = iup.gridbox{
-	numdiv = 8, orientation = "HORIZONTAL", homogeneouslin = "YES",
-	gapcol = 10, gaplin = 8, alignmentlin = "ACENTER", sizelin = 0
-}
-
-local toggle_names = {
-	[1] = "Permeable",
-}
-
-for i = 1, 32 do
-	local t = iup.toggle{value = "OFF", valuechanged_cb = SetFlag}
-	toggles[i] = t
-	iup.Append(toggle_grid, iup.label{title = toggle_names[i] or ("Bit".. i)})
-	iup.Append(toggle_grid, t)
-end
+local tog = toggles.new()
 
 local button = iup.button{title = "Go", padding = "10x0",
 	action = function()
@@ -68,13 +53,7 @@ local button = iup.button{title = "Go", padding = "10x0",
 			end
 		else return end
 
-		local val = 0
-		for i = 32, 1, -1 do
-			val = val * 2
-			if toggles[i].value == "ON" then
-				val = val + 1
-			end
-		end
+		local val = tog:GetBinaryValue()
 		local count = 0
 		local progress = iup.progressdlg{
 			count = 0,
@@ -144,7 +123,7 @@ local editor = iup.dialog{title = "Triangle Flag Mass Editor",
 				gapcol = 10, gaplin = 8, alignmentlin = "ACENTER", sizelin = 1
 			},
 			iup.vbox{
-				toggle_grid, button;
+				tog.grid, button;
 				alignment = "ACENTER", gap = 20,
 			},
 			gap = 10,

@@ -33,7 +33,15 @@ local function ReadMTL(path)
 	return out
 end
 
-function obj.Import(path, dir, appending)
+local function WriteO(f, obj)
+	f:write("\n", obj.name, " = {from = ", obj.from, ", to = ", obj.to)
+	for i, v in ipairs(obj) do
+		f:write(", ", v)
+	end
+	f:write("}")
+end
+
+function obj.Import(path, dir, appending, shortname)
 	local f = assert(io.open(path, "r"))
 	local fstr = f:read("*a")
 	f:seek("set")
@@ -52,6 +60,9 @@ function obj.Import(path, dir, appending)
 	local in_object, mat_src
 	local mat_index = {}
 	local cur_index
+
+	local cur_obj
+	local data_file = assert(io.open("data/".. shortname ..".lua", "w+"))
 
 	local face = function(str)
 		local a = vert_mem[str]
@@ -116,6 +127,9 @@ function obj.Import(path, dir, appending)
 							insert(materials, tbl)
 						end
 					end
+					if cur_obj then
+						insert(cur_obj, cur_index)
+					end
 				elseif cmd == "f" then
 					local v1, v2, v3 = args:match("(%d+/%d*/%d+) (%d+/%d*/%d+) (%d+/%d*/%d+)")
 					if v1 and v2 and v3 then
@@ -128,6 +142,13 @@ function obj.Import(path, dir, appending)
 							flag = 65536,
 						})
 					end
+				elseif cmd == "o" then
+					local t = #triangles
+					if cur_obj then
+						cur_obj.to = t
+						WriteO(data_file, cur_obj)
+					end
+					cur_obj = {name = args, from = t + 1}
 				end
 			elseif cmd == "mtllib" then
 				mat_src = ReadMTL(path:gsub("[^\\/]+%.%w+$", args))
@@ -137,6 +158,13 @@ function obj.Import(path, dir, appending)
 	end
 
 	f:close()
+
+	if cur_obj then
+		cur_obj.to = #triangles
+		WriteO(data_file, cur_obj)
+	end
+	data_file:write("\n")
+	data_file:close()
 
 	if mat_src then
 		local folder = path:match("^.+[\\/]")

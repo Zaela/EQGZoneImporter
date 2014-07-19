@@ -59,11 +59,15 @@ namespace Viewer
 			float delta = timer->getTime() / 1000.0f;
 			timer->setTime(0);
 
-			control.ApplyMovement(delta);
+			if (device->isWindowActive() && device->isWindowFocused())
+			{
+				control.ApplyMovement(delta);
 
-			driver->beginScene(true, true, video::SColor(255, 128, 128, 128));
-			mgr->drawAll();
-			driver->endScene();
+				driver->beginScene(true, true, video::SColor(255, 128, 128, 128));
+				mgr->drawAll();
+				driver->endScene();
+			}
+
 			std::this_thread::sleep_for(std::chrono::milliseconds(20));
 		}
 
@@ -101,7 +105,7 @@ namespace Viewer
 		relativeRotation.Y += mRelX;
 		relativeRotation.X += mRelY;
 
-		if (mTurnDirection != TURN_NONE)
+		if (!mMouseDown && mTurnDirection != TURN_NONE)
 		{
 			relativeRotation.Y += delta * 100 * mTurnDirection;
 		}
@@ -118,6 +122,15 @@ namespace Viewer
 		if (mMoveDirection != MOVE_NONE)
 		{
 			pos -= movedir * delta * mMovespeed * mMoveDirection;
+		}
+
+		if (mMouseDown && mTurnDirection != TURN_NONE)
+		{
+			core::vector3df strafevect = target;
+			strafevect = strafevect.crossProduct(mCamera->getUpVector());
+			strafevect.normalize();
+
+			pos -= strafevect * delta * mMovespeed * mTurnDirection;
 		}
 
 		// write translation

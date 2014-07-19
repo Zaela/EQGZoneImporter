@@ -1,5 +1,6 @@
 
 require "gui/flag_editor"
+local toggles = require "gui/toggles"
 
 local list = iup.list{visiblecolumns = 8, visiblelines = 15, expand = "VERTICAL"}
 local vertices, triangles, materials, ClearFields, active_pos
@@ -35,12 +36,7 @@ local grid2 = iup.gridbox{
 	gapcol = 10, gaplin = 8, alignmentlin = "ACENTER", sizelin = 0
 }
 
-local toggles = {}
-
-local grid3 = iup.gridbox{
-	numdiv = 8, orientation = "HORIZONTAL", homogeneouslin = "YES",
-	gapcol = 10, gaplin = 8, alignmentlin = "ACENTER", sizelin = 0
-}
+local tog
 
 local function SaveFlag()
 	local n = tonumber(flag_field.value) or 0
@@ -54,38 +50,15 @@ local function SaveFlag()
 end
 
 local function SetFlag()
-	local n = 0
-	for i = 32, 1, -1 do
-		n = n * 2
-		if toggles[i].value == "ON" then
-			n = n + 1
-		end
-	end
-	flag_field.value = n
+	flag_field.value = tog:GetBinaryValue()
 	SaveFlag()
 end
 
-local toggle_names = {
-	[1] = "Permeable",
-}
-
-for i = 1, 32 do
-	local t = iup.toggle{value = "OFF", valuechanged_cb = SetFlag}
-	toggles[i] = t
-	iup.Append(grid3, l(toggle_names[i] or ("Bit".. i)))
-	iup.Append(grid3, t)
-end
-
-local function SetToggles(n)
-	for i = 1, 32 do
-		toggles[i].value = (n % 2 == 1) and "ON" or "OFF"
-		n = math.floor(n / 2)
-	end
-end
+tog = toggles.new(SetFlag)
 
 function flag_field:valuechanged_cb()
 	local n = tonumber(self.value) or 0
-	SetToggles(n)
+	tog:SetBinaryValue(n)
 	SaveFlag()
 end
 
@@ -126,7 +99,7 @@ function list:action(str, pos, state)
 			mat_field.value = "<none>"
 		end
 		flag_field.value = flag
-		SetToggles(flag)
+		tog:SetBinaryValue(flag)
 
 		if vertices.binary then
 			ReadBinaryVertex(v1, 1)
@@ -176,6 +149,7 @@ function ClearFields()
 	end
 	mat_field.value = ""
 	flag_field.value = ""
+	tog:Clear()
 end
 
 local flag_editor_button = iup.button{title = "Flag Editor", padding = "10x0",
@@ -190,7 +164,7 @@ return {
 	name = "Triangles",
 	display = iup.hbox{list, iup.vbox{
 		grid, grid2, iup.hbox{
-			grid3, flag_editor_button; gap = 30, alignment = "ACENTER",
+			tog.grid, flag_editor_button; gap = 30, alignment = "ACENTER",
 		}; gap = 20};
 		nmargin = "10x10", gap = 10},
 	read = read,
