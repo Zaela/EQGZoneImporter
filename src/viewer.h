@@ -22,9 +22,19 @@ namespace Viewer
 	{
 	public:
 		CameraController() : mMovespeed(150.0f), mMoveDirection(MOVE_NONE), mTurnDirection(TURN_NONE),
-			mMouseDown(false), mRelX(0), mRelY(0)
+			mHasMoved(true), mMouseDown(false), mRelX(0), mRelY(0)
 		{
 	
+		}
+
+		bool CheckMoved()
+		{
+			if (mHasMoved)
+			{
+				mHasMoved = false;
+				return true;
+			}
+			return false;
 		}
 
 		void ApplyMovement(float delta);
@@ -50,6 +60,7 @@ namespace Viewer
 		scene::ISceneNode* mMover;
 		scene::ISceneNode* mTarget;
 		scene::ICameraSceneNode* mCamera;
+		bool mHasMoved;
 		bool mMouseDown;
 		float mMouseX;
 		float mMouseY;

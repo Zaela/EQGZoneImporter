@@ -63,9 +63,12 @@ namespace Viewer
 			{
 				control.ApplyMovement(delta);
 
-				driver->beginScene(true, true, video::SColor(255, 128, 128, 128));
-				mgr->drawAll();
-				driver->endScene();
+				if (control.CheckMoved())
+				{
+					driver->beginScene(true, true, video::SColor(255, 128, 128, 128));
+					mgr->drawAll();
+					driver->endScene();
+				}
 			}
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -108,6 +111,7 @@ namespace Viewer
 		if (!mMouseDown && mTurnDirection != TURN_NONE)
 		{
 			relativeRotation.Y += delta * 100 * mTurnDirection;
+			mHasMoved = true;
 		}
 
 		target.set(0,0, core::max_(1.f, pos.getLength()));
@@ -122,6 +126,7 @@ namespace Viewer
 		if (mMoveDirection != MOVE_NONE)
 		{
 			pos -= movedir * delta * mMovespeed * mMoveDirection;
+			mHasMoved = true;
 		}
 
 		if (mMouseDown && mTurnDirection != TURN_NONE)
@@ -131,6 +136,7 @@ namespace Viewer
 			strafevect.normalize();
 
 			pos -= strafevect * delta * mMovespeed * mTurnDirection;
+			mHasMoved = true;
 		}
 
 		// write translation
@@ -197,6 +203,7 @@ namespace Viewer
 			{
 				mRelX += ev.X - mMouseX;
 				mRelY += ev.Y - mMouseY;
+				mHasMoved = true;
 			}
 			mMouseX = ev.X;
 			mMouseY = ev.Y;
