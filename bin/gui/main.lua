@@ -24,11 +24,12 @@ local displays = {
 	require "gui/region",
 	require "gui/light",
 	require "gui/import",
+	require "gui/obj_data",
 }
 require "gui/loader"
 require "gui/s3d"
 
-local title = "EQG Zone Importer v1.1"
+local title = "EQG Zone Importer v1.2"
 local window
 local tabs = iup.tabs{padding = "5x5"}
 
