@@ -42,7 +42,7 @@ function import_button:action()
 	local obj_path = source_text.value
 	if eqg_path:len() < 2 or obj_path:len() < 2 then return end
 
-	local shortname = eqg_path:match("([%w_]+)%.eqg$")
+	local shortname = eqg_path:match("([%s%w_]+)%.eqg$")
 	if not shortname then return end
 	shortname = shortname:lower()
 
@@ -53,14 +53,15 @@ function import_button:action()
 	end
 	open_path = eqg_path
 	open_dir = dir
-	local pos, ter_name
+	local pos, ter_name, zon_pos
 	for i, ent in ipairs(dir) do
 		local name = ent.name
 		local ext = name:match("%.(%w+)$")
 		if ext == "ter" then
 			ter_name = name
 			pos = i
-			break
+		elseif ext == "zon" then
+			zon_pos = i
 		end
 	end
 	if not pos then
@@ -83,6 +84,7 @@ function import_button:action()
 
 	DirNames(dir)
 
+	dir[pos] = {pos = pos, name = ter_name}
 	local ter_data = obj.Import(obj_path, dir, (pos > #dir), shortname)
 	local zon_data = {
 		models = {ter_name},
@@ -91,8 +93,12 @@ function import_button:action()
 		lights = {},
 	}
 
+	local zon_name = shortname .. ".zon"
+
+	DirNames(dir)
+
 	active_ter_name = ter_name
-	active_zon_name = shortname .. ".zon"
+	active_zon_name = zon_name
 
 	LoadFromImport(ter_data, zon_data, shortname, eqg_path)
 	if Save(true) then

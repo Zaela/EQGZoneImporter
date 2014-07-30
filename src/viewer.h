@@ -39,12 +39,9 @@ namespace Viewer
 
 		void ApplyMovement(float delta);
 
-		void SetNodes(IrrlichtDevice* device, scene::ISceneNode* mover, scene::ISceneNode* target,
-			scene::ICameraSceneNode* camera)
+		void SetPtrs(IrrlichtDevice* device, scene::ICameraSceneNode* camera)
 		{
 			mDevice = device;
-			mMover = mover;
-			mTarget = target;
 			mCamera = camera;
 		}
 
@@ -57,8 +54,6 @@ namespace Viewer
 		int8 mMoveDirection;
 		int8 mTurnDirection;
 		IrrlichtDevice* mDevice;
-		scene::ISceneNode* mMover;
-		scene::ISceneNode* mTarget;
 		scene::ICameraSceneNode* mCamera;
 		bool mHasMoved;
 		bool mMouseDown;

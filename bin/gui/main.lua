@@ -16,6 +16,15 @@ function error_popup(msg)
 	iup.Destroy(err)
 end
 
+local log_file = assert(io.open("log.txt", "w+"))
+log_file:setvbuf("no")
+function log_write(...)
+	log_file:write("[", os.date(), "] ", ...)
+	log_file:write("\r\n")
+end
+
+log_write "Loading UI"
+
 local displays = {
 	require "gui/general",
 	require "gui/material",
@@ -66,6 +75,7 @@ local function OpenZoneFile()
 				window.title = title .." - ".. name
 				tabs:tabchangepos_cb(tabs.valuepos)
 			end
+			log_write "Writing gui/settings.lua"
 			local f = assert(io.open("gui/settings.lua", "w+"))
 			f:write("\nsettings = {\n\tfolder = \"", (path:gsub("\\", "\\\\")), "\",\n")
 			f:write("\tviewer = {\n\t\twidth = ", v and v.width or 600, ",\n\t\theight = ", v and v.height or 400, ",\n")
@@ -76,6 +86,7 @@ local function OpenZoneFile()
 end
 
 function LoadFromImport(ter_data, zon_data, name, path)
+	log_write("Loading '", name, "' from '", path, "' after import")
 	active_ter = ter_data
 	active_zon = zon_data
 	for i, d in ipairs(displays) do
@@ -84,11 +95,26 @@ function LoadFromImport(ter_data, zon_data, name, path)
 	zone_name = name
 	window.title = title .." - ".. name
 	tabs:tabchangepos_cb(tabs.valuepos)
+	log_write "Writing gui/settings.lua"
 	local f = assert(io.open("gui/settings.lua", "w+"))
 	f:write("\nsettings = {\n\tfolder = \"", (path:gsub("\\", "\\\\")), "\",\n")
 	f:write("\tviewer = {\n\t\twidth = ", v and v.width or 600, ",\n\t\theight = ", v and v.height or 400, ",\n")
 	f:write("\t}\n}\n")
 	f:close()
+end
+
+local function dump_table_recurse(f, tbl, depth)
+	for k, v in pairs(tbl) do
+		local t = type(v)
+		local d = string.rep("\t", depth)
+		if t == "table" then
+			f:write(d, k, " = {\r\n")
+			dump_table_recurse(f, v, depth + 1)
+			f:write(d, "},\r\n")
+		else
+			f:write(d, k, " = ", tostring(v), ",\r\n")
+		end
+	end
 end
 
 function Save(silent)
@@ -100,10 +126,13 @@ function Save(silent)
 	tname = tname:lower()
 	zname = zname:lower()
 
+	log_write("Attempting to save '", tname, "' and '", zname, "' to active directory")
+
 	local s, data = pcall(ter.Write, active_ter, tname, eqg.CalcCRC(tname))
 	if s then
 		dir[GetDirPos(tname)] = data
 	else
+		log_write("Error writing '", tname, "': ", data)
 		error_popup(data)
 		return false
 	end
@@ -112,12 +141,14 @@ function Save(silent)
 	if s then
 		dir[GetDirPos(zname)] = data
 	else
+		log_write("Error writing '", zname, "': ", data)
 		error_popup(data)
 		return false
 	end
 
 	s, data = pcall(eqg.WriteDirectory, path, dir)
 	if not s then
+		log_write("Error writing to active EQG directory: ", data)
 		error_popup(data)
 		return false
 	end
@@ -127,6 +158,7 @@ function Save(silent)
 		iup.Popup(msg)
 		iup.Destroy(msg)
 	end
+	log_write "Saved successfully"
 	return true
 end
 
@@ -142,11 +174,14 @@ local function NewEQGArchive()
 				path = path:match("([^%.]+)%.?%w*")
 				path = path .. ".eqg"
 			end
+			log_write("Creating new EQG file at '", path, "'")
 			local s, err = pcall(eqg.WriteDirectory, path, {})
 			if not s then
 				iup.Destroy(dlg)
+				log_write("Error creating new EQG file: ", err)
 				return error_popup(err)
 			end
+			log_write "Successfully created new EQG file"
 			local msg = iup.messagedlg{title = "Created EQG", value = "Successfully created '".. path .."'"}
 			iup.Popup(msg)
 			iup.Destroy(msg)
@@ -184,6 +219,8 @@ local function StartViewer()
 			end
 		end
 	end
+
+	log_write("Launching zone viewer, textures found: ", #textures)
 
 	viewer.LoadZone(ter_data.vertices, ter_data.triangles, textures)
 end
@@ -257,3 +294,6 @@ iup.MainLoop()
 eqg.CloseDirectory(open_dir)
 
 iup.Close()
+
+log_write "Shutting down cleanly"
+log_file:close()

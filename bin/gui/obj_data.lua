@@ -37,18 +37,14 @@ function obj_list:action(str, pos, state)
 	end
 end
 
-local function GetBinTriFlag(pos)
-	local a, b, c, d, flag = util.GetTriangle(triangles, pos - 1)
-	return flag
-end
-
 function mat_list:action(str, pos, state)
 	if state == 1 and cur_obj then
 		cur_mat_pos = pos
 		local flag
 		if pos == 1 then
 			if triangles.binary then
-				flag = GetBinTriFlag(cur_obj.from)
+				local a, b, c, d, f = util.GetTriangle(triangles, cur_obj.from - 1)
+				flag = f
 			else
 				local tri = triangles[cur_obj.from]
 				if tri then

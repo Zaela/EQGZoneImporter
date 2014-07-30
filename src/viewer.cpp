@@ -45,7 +45,7 @@ namespace Viewer
 
 		scene::ICameraSceneNode* cam = mgr->addCameraSceneNode();
 		cam->bindTargetAndRotation(true);
-		control.SetNodes(device, nullptr, nullptr, cam);
+		control.SetPtrs(device, cam);
 
 		mgr->setAmbientLight(video::SColorf(1, 1, 1));
 		ITimer* timer = device->getTimer();
@@ -339,7 +339,7 @@ namespace Viewer
 				vert.Normal.Y = v->k;
 				vert.TCoords.X = v->u;
 				if (cur_dds)
-					vert.TCoords.Y = -v->v;
+					vert.TCoords.Y = (v->v > 0) ? -v->v : v->v;
 				else
 					vert.TCoords.Y = v->v;
 

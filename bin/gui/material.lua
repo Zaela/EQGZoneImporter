@@ -26,11 +26,7 @@ local function Edited()
 		end
 	end
 	if material then
-		local f = assert(io.open("test.txt", "a+"))
-		f:write(shader.value, " - ")
 		material.shader = shader.value
-		f:write(material.shader, "\r\n")
-		f:close()
 	end
 end
 

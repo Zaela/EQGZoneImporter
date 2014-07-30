@@ -9,6 +9,7 @@ local insert = table.insert
 local pcall = pcall
 
 local function ReadMTL(path)
+	log_write("Attempting to read MTL file from '", path, "'")
 	local f = assert(io.open(path, "r"))
 	local out = {}
 	local cur
@@ -20,15 +21,21 @@ local function ReadMTL(path)
 			if cmd == "newmtl" then
 				cur = {}
 				out[args] = cur
+				log_write("Found material '", args, "'")
 			elseif cmd == "map_kd" then
-				cur.diffuse_map = args:match("[%w_]+%.%w+")
+				local name = args:match("[%w_]+%.%w+")
+				cur.diffuse_map = name
+				log_write("Found diffuse map name '", name, "'")
 			elseif cmd == "map_bump" then
-				cur.normal_map = args:match("[%w_]+%.%w+")
+				local name = args:match("[%w_]+%.%w+")
+				cur.normal_map = name
+				log_write("Found normal map name '", name, "'")
 			end
 		end
 	end
 
 	f:close()
+	log_write "Finished reading MTL file"
 
 	return out
 end
@@ -42,6 +49,7 @@ local function WriteO(f, obj)
 end
 
 function obj.Import(path, dir, appending, shortname)
+	log_write "Starting IMPORT from OBJ format"
 	local f = assert(io.open(path, "r"))
 	local fstr = f:read("*a")
 	f:seek("set")
@@ -49,6 +57,8 @@ function obj.Import(path, dir, appending, shortname)
 	for n in fstr:gmatch("\n") do
 		line_count = line_count + 1
 	end
+
+	log_write("Found OBJ file with ", line_count, " lines at '", path, "'")
 
 	local materials = {}
 	local vertices = {}
@@ -158,6 +168,7 @@ function obj.Import(path, dir, appending, shortname)
 	end
 
 	f:close()
+	log_write "Finished reading OBJ vertices, normals, texture coordinates and faces"
 
 	if cur_obj then
 		cur_obj.to = #triangles
@@ -168,9 +179,11 @@ function obj.Import(path, dir, appending, shortname)
 
 	if mat_src then
 		local folder = path:match("^.+[\\/]")
+		log_write("Searching for texture files to import from directory '", folder, "'")
 		local append_pos = appending and (#dir + 2) or (#dir + 1)
 		local load_img = function(name)
 			local mat_path = folder .. name
+			log_write("Attempting to find file '", name, "' at '", mat_path, "'")
 			name = name:lower()
 			local pos
 			for i, ent in ipairs(dir) do
@@ -186,16 +199,21 @@ function obj.Import(path, dir, appending, shortname)
 			local s, err = pcall(eqg.ImportFlippedImage, mat_path, name, dir, pos)
 			if not s then
 				error_popup(err)
+			else
+				log_write("Imported '", name, "' successfully")
 			end
 		end
 
-		for _, mat in pairs(mat_src) do
+		for mat_name, mat in pairs(mat_src) do
+			log_write("Searching for images to import for material '", mat_name, "'")
 			local name = mat.diffuse_map
 			if name then
+				log_write("Material had diffuse map '", name, "' listed")
 				load_img(name)
 			end
 			name = mat.normal_map
 			if name then
+				log_write("Material had normal map '", name, "' listed")
 				load_img(name)
 			end
 		end
@@ -203,6 +221,8 @@ function obj.Import(path, dir, appending, shortname)
 
 	progress:hide()
 	iup.Destroy(progress)
+
+	log_write "Import from OBJ complete"
 
 	return {
 		materials = materials,

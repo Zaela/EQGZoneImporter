@@ -22,8 +22,10 @@ function GetDirPos(name)
 end
 
 function LoadZone(eqg_path)
+	log_write("Loading zone EQG from '", eqg_path, "'")
 	local s, data = pcall(eqg.LoadDirectory, eqg_path)
 	if not s then
+		log_write "Could not open zone EQG"
 		return error_popup(data)
 	end
 	open_dir = data
@@ -34,14 +36,16 @@ function LoadZone(eqg_path)
 		local ext = name:match("%.(%w+)$")
 		ent.pos = i
 		by_name[name] = ent
-		if ext == "ter" then
-			ter_file = ent
-		elseif ext == "zon" then
-			zon_file = ent
+		if ext then
+			if ext == "ter" then
+				ter_file = ent
+			elseif ext == "zon" then
+				zon_file = ent
+			end
 		end
 	end
 
-	local path, name, ext = eqg_path:match("^([:%w_\\/]+[\\/])([%w_]+)(%.%w+)$")
+	local path, name, ext = eqg_path:match("^([:%s%w_\\/]+[\\/])([%s%w_]+)(%.%w+)$")
 	if not ter_file then
 		return error_popup("Could not find .ter file in '".. name .. ext .."'. Are you sure this is a zone EQG file?")
 	end
