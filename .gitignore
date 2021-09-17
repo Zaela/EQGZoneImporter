@@ -24,7 +24,6 @@
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
 *.exe
@@ -34,3 +33,4 @@
 .vs
 Debug/
 Release/
+build/
