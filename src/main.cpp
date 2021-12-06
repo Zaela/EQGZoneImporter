@@ -11,6 +11,8 @@
 #include <iupcontrols.h>
 #include <iupluacontrols.h>
 
+extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
+
 #include "ter.h"
 #include "zon.h"
 #include "mod.h"
