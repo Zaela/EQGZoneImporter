@@ -46,7 +46,9 @@ function import_button:action()
 	if not shortname then return end
 	shortname = shortname:lower()
 
-	eqg.CloseDirectory(open_dir)
+	
+	--- eqg.CloseDirectory(open_dir)
+	
 	local s, dir = pcall(eqg.LoadDirectory, eqg_path)
 	if not s then
 		return error_popup(dir)
