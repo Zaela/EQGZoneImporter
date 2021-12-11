@@ -50,7 +50,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance,
 	argv = __argv;
 
 #else
-int main(char *argv[])
+int main(int argc, char *argv[])
 {
 #endif
 	gViewerThread = nullptr;
@@ -71,7 +71,7 @@ int main(char *argv[])
 	Viewer::LoadFunctions(L);
 	Util::LoadFunctions(L);
 
-	if (strlen(argv[1]) > 0) {
+	if (argc > 0 && strlen(argv[1]) > 0) {
 		if (luaL_loadfile(L, "gui/main_cmd.lua") != 0) {
 			ShowError("Could not load GUI script:\n%s\n", lua_tostring(L, -1));
 			lua_close(L);
