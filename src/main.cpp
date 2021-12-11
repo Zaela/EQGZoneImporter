@@ -43,10 +43,16 @@ void ShowError(const char* fmt, const char* str)
 #ifdef _WIN32
 int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance,
 	_In_ LPSTR lpCmdLine, _In_ int nCmdShow)
+{	
+	int argc = 0; 
+	char** argv = NULL;
+	argc = __argc;
+	argv = __argv;
+
 #else
-int main()
-#endif
+int main(char *argv[])
 {
+#endif
 	gViewerThread = nullptr;
 	gRunThread.clear();
 
@@ -65,6 +71,20 @@ int main()
 	Viewer::LoadFunctions(L);
 	Util::LoadFunctions(L);
 
+	if (strlen(argv[1]) > 0) {
+		if (luaL_loadfile(L, "gui/main_cmd.lua") != 0) {
+			ShowError("Could not load GUI script:\n%s\n", lua_tostring(L, -1));
+			lua_close(L);
+			return 1;
+		}
+		lua_pushstring(L, argv[1]);
+		if (lua_pcall(L, 1, 0, 0) != 0) {
+			ShowError("Runtime error:\n%s\n", lua_tostring(L, -1));
+			lua_close(L);
+			return 1;
+		}
+		return 0;
+	}
 	if (luaL_loadfile(L, "gui/main.lua") != 0)
 	{
 		ShowError("Could not load GUI script:\n%s\n", lua_tostring(L, -1));
