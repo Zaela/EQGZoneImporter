@@ -400,10 +400,21 @@ namespace Util
 		return 0;
 	}
 
+	int IsConsole(lua_State* L)
+	{
+		bool isConsole = false;
+#if defined _CONSOLE
+		isConsole = true;
+#endif
+		lua_pushboolean(L, isConsole);		
+		return 1;
+	}
+
 	static const luaL_Reg funcs[] = {
 		{"GetVertex", VertexLookup},
 		{"GetTriangle", TriangleLookup},
 		{"SetTriangleFlag", SetTriangleFlag},
+		{"IsConsole", IsConsole},
 		{nullptr, nullptr}
 	};
 

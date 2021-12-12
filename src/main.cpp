@@ -31,7 +31,7 @@ std::atomic_flag gRunThread;
 
 void ShowError(const char* fmt, const char* str)
 {
-#ifdef _WIN32
+#if defined _WIN32 && !_CONSOLE
 		char msg[1024];
 		snprintf(msg, 1024, fmt, str);
 		MessageBox(NULL, msg, NULL, MB_OK | MB_ICONERROR | MB_TASKMODAL);
@@ -40,7 +40,7 @@ void ShowError(const char* fmt, const char* str)
 #endif
 }
 
-#ifdef _WIN32
+#if defined _WIN32 && !_CONSOLE
 int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance,
 	_In_ LPSTR lpCmdLine, _In_ int nCmdShow)
 {	
@@ -71,20 +71,35 @@ int main(int argc, char *argv[])
 	Viewer::LoadFunctions(L);
 	Util::LoadFunctions(L);
 
-	if (argc > 0 && strlen(argv[1]) > 0) {
+#if defined _CONSOLE
+	if (argc > 1 && strlen(argv[1]) > 0) {
 		if (luaL_loadfile(L, "gui/main_cmd.lua") != 0) {
 			ShowError("Could not load GUI script:\n%s\n", lua_tostring(L, -1));
 			lua_close(L);
 			return 1;
 		}
-		lua_pushstring(L, argv[1]);
-		if (lua_pcall(L, 1, 0, 0) != 0) {
-			ShowError("Runtime error:\n%s\n", lua_tostring(L, -1));
+		
+		if (lua_pcall(L, 0, 0, 0) != 0) {
+			ShowError("main_cmd.lua error:\n%s\n", lua_tostring(L, -1));
 			lua_close(L);
 			return 1;
 		}
+
+		lua_getglobal(L, "main_cmd");
+		for (int i = 1; i < argc; i++) {
+			lua_pushstring(L, argv[i]);
+		}
+		if (lua_pcall(L, argc - 1, 0, 0) != 0) {
+			ShowError("main_cmd error:\n%s\n", lua_tostring(L, -1));
+			lua_close(L);
+			return 1;
+		}
+
 		return 0;
 	}
+	ShowError("usage: eqgzi import \".eqg\" \".obj\"", "");
+	return 1;
+#endif
 	if (luaL_loadfile(L, "gui/main.lua") != 0)
 	{
 		ShowError("Could not load GUI script:\n%s\n", lua_tostring(L, -1));
