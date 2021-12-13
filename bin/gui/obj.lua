@@ -95,8 +95,8 @@ function obj.Import(path, dir, appending, shortname)
 		return a
 	end
 
-	if not util.IsConsole() then
-		local progress = iup.progressdlg{count = 0, totalcount = line_count, description = "Importing model..."}
+	local progress = iup.progressdlg{count = 0, totalcount = line_count, description = "Importing model..."}
+	if not util.IsConsole() then		
 		progress:show()
 	end
 
