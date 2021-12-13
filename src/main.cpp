@@ -23,7 +23,14 @@ extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <libgen.h>         // dirname
+#include <unistd.h>         // readlink
+#include <linux/limits.h>   // PATH_MAX
 #endif
+
+using namespace std;
+
 
 //globals
 std::thread* gViewerThread;
@@ -39,6 +46,27 @@ void ShowError(const char* fmt, const char* str)
 		printf(fmt, str);
 #endif
 }
+
+#if defined _WIN32
+std::string GetCurrentDirectory()
+{
+	char buffer[MAX_PATH];
+	GetModuleFileNameA(NULL, buffer, MAX_PATH);
+	std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+
+	return std::string(buffer).substr(0, pos);
+}
+#else
+std::string GetCurrentDirectory()
+{
+	char result[PATH_MAX];
+	ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+	const char* path;
+	if (count != -1) {
+		path = dirname(result);
+	}
+}
+#endif
 
 #if defined _WIN32 && !_CONSOLE
 int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance,
@@ -73,7 +101,7 @@ int main(int argc, char *argv[])
 
 #if defined _CONSOLE
 	if (argc > 1 && strlen(argv[1]) > 0) {
-		if (luaL_loadfile(L, "gui/main_cmd.lua") != 0) {
+		if (luaL_loadfile(L, GetCurrentDirectory().append("/gui/main_cmd.lua").c_str()) != 0) {
 			ShowError("Could not load GUI script:\n%s\n", lua_tostring(L, -1));
 			lua_close(L);
 			return 1;

@@ -72,7 +72,7 @@ function obj.Import(path, dir, appending, shortname)
 	local cur_index
 
 	local cur_obj
-	local data_file = assert(io.open("data/".. shortname ..".lua", "w+"))
+	local data_file = assert(io.open(util.ExeDir() .. "/data/".. shortname ..".lua", "w+"))
 
 	local face = function(str)
 		local a = vert_mem[str]
@@ -191,7 +191,7 @@ function obj.Import(path, dir, appending, shortname)
 		local append_pos = appending and (#dir + 2) or (#dir + 1)
 		local load_img = function(name)
 			local mat_path = folder .. name
-			log_write("Attempting to find file '" .. name, "' at '" .. mat_path, "'")
+			log_write("Attempting to find file '" .. name .. "' at '" .. mat_path .. "'")
 			name = name:lower()
 			local pos
 			for i, ent in ipairs(dir) do
@@ -207,7 +207,7 @@ function obj.Import(path, dir, appending, shortname)
 			local s, err = pcall(eqg.ImportFlippedImage, mat_path, name, dir, pos)
 			if not s then
 				if not util.IsConsole() then error_popup(err) end
-				if util.IsConsole() then log_write("Find file '".. name .. "' failed with error: " .. err) end
+				if util.IsConsole() then log_write("Find file '" .. name .. "' failed with error: " .. err) end
 			else
 				log_write("Imported '" .. name .. "' successfully")
 			end

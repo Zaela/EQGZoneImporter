@@ -1,5 +1,12 @@
 
 #include "util.h"
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <libgen.h>         // dirname
+#include <unistd.h>         // readlink
+#include <linux/limits.h>   // PATH_MAX
+#endif
 
 namespace Util
 {
@@ -410,11 +417,35 @@ namespace Util
 		return 1;
 	}
 
+#if defined _WIN32
+	int ExeDir(lua_State* L)
+	{
+		char buffer[MAX_PATH];
+		GetModuleFileNameA(NULL, buffer, MAX_PATH);
+		std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+		lua_pushstring(L, std::string(buffer).substr(0, pos).c_str());
+		return 1;
+	}
+#else
+	int ExeDir(lua_State* L)
+	{
+		char result[PATH_MAX];
+		ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+		const char* path;
+		if (count != -1) {
+			path = dirname(result);
+		}
+		lua_pushstring(L, path);
+		return 1
+	}
+#endif
+
 	static const luaL_Reg funcs[] = {
 		{"GetVertex", VertexLookup},
 		{"GetTriangle", TriangleLookup},
 		{"SetTriangleFlag", SetTriangleFlag},
 		{"IsConsole", IsConsole},
+		{"ExeDir", ExeDir},
 		{nullptr, nullptr}
 	};
 
