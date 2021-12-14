@@ -435,3 +435,4 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+history/
