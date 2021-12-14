@@ -100,6 +100,21 @@ function obj.Import(path, dir, appending, shortname)
 		progress:show()
 	end
 
+	local material_flags = {}
+	local shortname = path:match("([%s%w_]+)%.obj$")
+	local fm = io.open(shortname .. "_material.txt", "rb")
+	if fm then
+		fm:close()
+		local lineNumber = 0
+		for line in io.lines(shortname .. "_material.txt") do
+			lineNumber = lineNumber + 1
+			lines = Split(line, " ")
+			material_flags[lines[1]] = { flag = tonumber(lines[2]), shader = lines[3] }
+		end
+		log_write("Added " .. #material_flags .. " flags based on " .. shortname .. "_material.txt")
+	end
+
+	local last_material = { flag = 65536, last_shader = "Opaque_MaxCB1.fx"}
 	for line in f:lines() do
 		local cmd, args = line:match("%s*(%S+)%s([^\n]+)")
 		if cmd and args then
@@ -122,12 +137,18 @@ function obj.Import(path, dir, appending, shortname)
 					end
 				elseif cmd == "usemtl" then
 					cur_index = mat_index[args]
+					
+					last_material = material_flags[args]
+					if not last_material then
+						last_material = { flag = 65536, last_shader = "Opaque_MaxCB1.fx"}
+					end
+
 					if not cur_index then
 						cur_index = #materials
 						mat_index[args] = cur_index
 						local mat = mat_src[args]
 						if mat then
-							local tbl = {name = args, shader = "Opaque_MaxCB1.fx"}
+							local tbl = {name = args, shader = last_material.shader}
 							if mat.diffuse_map then
 								local v = mat.diffuse_map:lower()
 								tbl[1] = {name = "e_TextureDiffuse0", type = 2, value = v}
@@ -139,9 +160,11 @@ function obj.Import(path, dir, appending, shortname)
 							insert(materials, tbl)
 						end
 					end
+
 					if cur_obj then
 						insert(cur_obj, cur_index)
 					end
+					log_write("Material " .. args .. ": flag=" .. last_material.flag .. ", shader=" .. last_material.shader)
 				elseif cmd == "f" then
 					local v1, v2, v3 = args:match("(%d+/%d*/%d+) (%d+/%d*/%d+) (%d+/%d*/%d+)")
 					if v1 and v2 and v3 then
@@ -151,7 +174,7 @@ function obj.Import(path, dir, appending, shortname)
 							[2] = b,
 							[3] = c,
 							material = cur_index,
-							flag = 65536,
+							flag = last_material.flag,
 						})
 					end
 				elseif cmd == "o" then
