@@ -35,7 +35,7 @@ Debug/
 Release/
 build/
 
-bin/data/*
+/bin/data/*
 vcpkg/
 *.pdb
 log.txt

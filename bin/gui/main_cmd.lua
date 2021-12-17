@@ -17,7 +17,6 @@ end
 
 function log_write(...)
 	io.stdout:write(... .. "\n")
-	io.flush()
 end
 
 function Split(s, delimiter)
@@ -49,7 +48,7 @@ function obj_import(eqg_path, obj_path)
 
 	local s, dir = pcall(eqg.LoadDirectory, eqg_path)
 	if not s then
-		error(dir)
+		error("open eq path " .. eqg_path .. " failed: " .. dir)
 	end
 	open_path = eqg_path
 	open_dir = dir
