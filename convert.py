@@ -52,7 +52,10 @@ for m in bpy.data.materials:
             if not isinstance(k, str):
                 continue
             if k.startswith("e_"):
-                fm.write("e " + m.name.replace(" ", "-") + " " +  k + " " + str(m[k]) +"\n")
+                eValue = str(m[k])
+                if eValue.find(" ") == -1:
+                    eValue = "0 "+eValue
+                fm.write("e " + m.name.replace(" ", "-") + " " +  k + " " + eValue +"\n")
 
 for o in bpy.data.objects:
     if o.type == 'LIGHT':
@@ -61,7 +64,7 @@ for o in bpy.data.objects:
             fl.write(o.name.replace(" ", "-") + " " + roundFloatStr(o.location.x*2) + " " + roundFloatStr(o.location.y*2) + " " + roundFloatStr(o.location.z*2) + " " + roundFloatStr(li.color[0]) + " " + roundFloatStr(li.color[1]) + " " + roundFloatStr(li.color[2]) + " " + roundFloatStr(li.energy/10) + "\n")
     if o.type == 'EMPTY':
         if o.empty_display_type == 'CUBE':
-            fr.write(o.name.replace(" ", "-") + " " + roundFloatStr(o.location.y*2) + " " + roundFloatStr(o.location.x*2) + " " + roundFloatStr(o.location.z*2) + " " + roundFloatStr(o.scale.y*2) + " " + roundFloatStr(-o.scale.x*2) + " " + roundFloatStr((o.scale.z)*2) + " " + roundFloatStr(o.get("unknowna", 0)) + " " + roundFloatStr(o.get("unknownb", 0)) + " " + roundFloatStr(o.get("unknownc", 0)) + "\n")
+            fr.write(o.name.replace(" ", "-") + " " + roundFloatStr(-o.location.y*2) + " " + roundFloatStr(o.location.x*2) + " " + roundFloatStr(o.location.z*2) + " " + roundFloatStr(o.scale.y*2) + " " + roundFloatStr(-o.scale.x*2) + " " + roundFloatStr((o.scale.z)*2) + " " + roundFloatStr(o.get("unknowna", 0)) + " " + roundFloatStr(o.get("unknownb", 0)) + " " + roundFloatStr(o.get("unknownc", 0)) + "\n")
     if o.type == 'MESH' and o.get("id", "0") != "0" and o.get("spawngroupid", "0") != "0":
         id = o.get("id", 0)
         spawngroupid = o.get("spawngroupid", 0)

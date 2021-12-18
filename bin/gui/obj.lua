@@ -28,7 +28,7 @@ local function ReadMTL(path)
 				log_write("Found diffuse map name '" .. name .. "'")
 			elseif cmd == "map_bump" then
 				local name = args:match("[%w_]+%.%w+")
-				cur.normal_map = name
+				cur.e_TextureNormal0 = name
 				log_write("Found normal map name '" .. name .. "'")
 			end
 		end
@@ -46,6 +46,14 @@ local function WriteO(f, obj)
 		f:write(", ", v)
 	end
 	f:write("}")
+end
+
+function Split(s, delimiter)
+    result = {};
+    for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+        table.insert(result, match);
+    end
+    return result;
 end
 
 function obj.Import(path, dir, appending, shortname)
@@ -109,12 +117,31 @@ function obj.Import(path, dir, appending, shortname)
 		for line in io.lines(shortname .. "_material.txt") do
 			lineNumber = lineNumber + 1
 			lines = Split(line, " ")
-			material_flags[lines[1]] = { flag = tonumber(lines[2]), shader = lines[3] }
+			if not lines[1]  == "m" and not lines[1] == "e" then
+				error("failed to parse " .. shortname .. "_material.txt:" .. lineNumber .. " unknown definition " .. lines[1])
+			end
+			if lines[1] == "m" then
+				if not #lines == 4 then
+					error("failed to parse " .. shortname .. "_material.txt:" .. lineNumber .. " due to number of entries should be 4, got " .. #lines)
+				end
+				material_flags[lines[2]] = { flag = tonumber(lines[3]), shader = lines[4] }
+			end
+			if lines[1] == "e" then
+				if not #lines == 5 and not #lines == 4 then
+					error("failed to parse " .. shortname .. "_material.txt:" .. lineNumber .. " due to number of entries should be 4 or 5, got " .. #lines)
+				end
+				if #lines == 5 then
+					material_flags[lines[2]][lines[3]] = lines[4] .. " " .. lines[5]
+				end
+				if #lines == 4 then
+					material_flags[lines[2]][lines[3]] = lines[4]
+				end
+			end
 		end
 		log_write("Added " .. #material_flags .. " flags based on " .. shortname .. "_material.txt")
 	end
 
-	local last_material = { flag = 65536, last_shader = "Opaque_MaxCB1.fx"}
+	local last_material = { flag = 65536, shader = "Opaque_MaxCB1.fx"}
 	for line in f:lines() do
 		local cmd, args = line:match("%s*(%S+)%s([^\n]+)")
 		if cmd and args then
@@ -140,7 +167,7 @@ function obj.Import(path, dir, appending, shortname)
 					
 					last_material = material_flags[args]
 					if not last_material then
-						last_material = { flag = 65536, last_shader = "Opaque_MaxCB1.fx"}
+						last_material = { flag = 65536, shader = "Opaque_MaxCB1.fx"}
 					end
 
 					if not cur_index then
@@ -153,9 +180,15 @@ function obj.Import(path, dir, appending, shortname)
 								local v = mat.diffuse_map:lower()
 								tbl[1] = {name = "e_TextureDiffuse0", type = 2, value = v}
 							end
-							if mat.normal_map then
-								local v = mat.normal_map:lower()
-								insert(tbl, {name = "e_TextureNormal0", type = 2, value = v})
+							for key, value in pairs(last_material) do
+								if string.sub(key, 1, 2) == "e_" then
+									entries = Split(value, " ")
+									if not #entries == 2 then
+										error("expected two values for " .. key .. ", got " .. #entries)
+									end
+									log_write("adding to ".. args .. " ".. key .. " with value " .. entries[2])
+									insert(tbl, {name = key, type = entries[1], value = entries[2]})
+								end
 							end
 							insert(materials, tbl)
 						end
@@ -194,6 +227,24 @@ function obj.Import(path, dir, appending, shortname)
 		end
 	end
 
+
+	for name, flags in pairs(material_flags) do
+		for key, value in pairs(flags) do
+			if string.sub(key, 1, 2) == "e_" then
+				entries = Split(value, " ")
+				if not #entries == 2 then
+					error("expected two values for " .. key .. ", got " .. #entries)
+				end
+				
+				log_write("flags ".. name .. " key "..key..": " .. entries[2])
+				if not mat_src[name] then
+					mat_src[name] = {}
+				end
+				mat_src[name][key] = entries[2]
+			end
+		end
+	end
+
 	f:close()
 	log_write "Finished reading OBJ vertices, normals, texture coordinates and faces"
 
@@ -204,17 +255,16 @@ function obj.Import(path, dir, appending, shortname)
 	data_file:write("\n")
 	data_file:close()
 
-	if mat_src then
-		
+	if mat_src then		
 		local folder = path:match("^.+[\\/]")
 		if not folder then 
 			folder = "./"
 		end
-		log_write("Searching for texture files to import from directory '" .. folder .. "'")
+		log_write("Searching for texture files to import from directory '" .. folder .. "' (path: " .. path .. ")")
 		local append_pos = appending and (#dir + 2) or (#dir + 1)
 		local load_img = function(name)
 			local mat_path = folder .. name
-			log_write("Attempting to find file '" .. name .. "' at '" .. mat_path .. "'")
+			-- log_write("Attempting to find file '" .. name .. "' at '" .. mat_path .. "'")
 			name = name:lower()
 			local pos
 			for i, ent in ipairs(dir) do
@@ -229,23 +279,27 @@ function obj.Import(path, dir, appending, shortname)
 			end
 			local s, err = pcall(eqg.ImportFlippedImage, mat_path, name, dir, pos)
 			if not s then
-				if not util.IsConsole() then error_popup(err) end
+				if not util.IsConsole() then error(err) end
 				if util.IsConsole() then log_write("Find file '" .. name .. "' failed with error: " .. err) end
-			else
-				log_write("Imported '" .. name .. "' successfully")
+				return
 			end
 		end
 
 		for mat_name, mat in pairs(mat_src) do
-			log_write("Searching for images to import for material '" .. mat_name .. "'")
+			--log_write("Searching for images to import for material '" .. mat_name .. "'")
 			local name = mat.diffuse_map
 			if name then
-				log_write("Material had diffuse map '" .. name .. "' listed")
+				log_write("Material " .. mat_name .. " had diffuse map '" .. name .. "' listed")
 				load_img(name)
 			end
-			name = mat.normal_map
+			name = mat.e_TextureNormal0
 			if name then
-				log_write("Material had normal map '" .. name .. "' listed")
+				log_write("Material " .. mat_name .. " had normal map '" .. name .. "' listed")
+				load_img(name)
+			end
+			name = mat.e_TextureEnvironment0
+			if name then
+				log_write("Material " .. mat_name .. " had environment map '" .. name .. "' listed")
 				load_img(name)
 			end
 		end
