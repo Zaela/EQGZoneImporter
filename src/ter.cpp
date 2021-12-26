@@ -92,7 +92,7 @@ namespace TER
 		len = Triangle::SIZE * header->triangle_count;
 		block = lua_newuserdata(L, len);
 		memcpy(block, &ptr[pos], len);
-		pos += len;
+		//pos += len;
 		lua_setfield(L, -2, "data");
 
 		lua_setfield(L, -2, "triangles");
