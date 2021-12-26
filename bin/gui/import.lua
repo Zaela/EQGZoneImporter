@@ -102,8 +102,6 @@ function import_button:action()
 		log_write("Added " .. #light_data .. " lights based on " .. shortname .. "_light.txt")
 	end
 
-	log_write(dump(light_data))
-
 	local regions = {}
 	local f = io.open(obj_path .. shortname .. "_region.txt", "rb")
 	if f then		
