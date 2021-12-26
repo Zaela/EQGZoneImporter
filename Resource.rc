@@ -79,12 +79,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Xackery"
             VALUE "FileDescription", "Converts .obj and .txt meta files to .eqg format"
-            VALUE "FileVersion", "1.0.0.1"
+            VALUE "FileVersion", "1.5.0.0"
             VALUE "InternalName", "eqgzi.exe"
             VALUE "LegalCopyright", "Copyright (C) 2021"
             VALUE "OriginalFilename", "eqgzi.exe"
             VALUE "ProductName", "EQG Zone Importer CLI"
-            VALUE "ProductVersion", "1.0.0.1"
+            VALUE "ProductVersion", "1.5.0.0"
         END
     END
     BLOCK "VarFileInfo"
