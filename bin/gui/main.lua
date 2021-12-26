@@ -72,7 +72,7 @@ local function OpenZoneFile()
 				for i, d in ipairs(displays) do
 					d.read(ter_data, zon_data, name, path)
 				end
-				window.title = title .." - ".. name
+				window.title = name
 				tabs:tabchangepos_cb(tabs.valuepos)
 			end
 			log_write "Writing gui/settings.lua"
@@ -93,7 +93,7 @@ function LoadFromImport(ter_data, zon_data, name, path)
 		d.read(ter_data, zon_data, name, path)
 	end
 	zone_name = name
-	window.title = title .." - ".. name
+	window.title = name
 	tabs:tabchangepos_cb(tabs.valuepos)
 	log_write "Writing gui/settings.lua"
 	local f = assert(io.open("gui/settings.lua", "w+"))
@@ -277,7 +277,7 @@ local function LoadSettings()
 				for i, d in ipairs(displays) do
 					d.read(ter_data, zon_data, name, open_path)
 				end
-				window.title = title .." - ".. name
+				window.title = name
 				tabs:tabchangepos_cb(tabs.valuepos)
 			end
 		end
