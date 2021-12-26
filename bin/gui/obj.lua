@@ -302,6 +302,11 @@ function obj.Import(path, dir, appending, shortname)
 				log_write("Material " .. mat_name .. " had environment map '" .. name .. "' listed")
 				load_img(name)
 			end
+			name = mat.e_TextureSecond0
+			if name then
+				log_write("Material " .. mat_name .. " had second diffuse map '" .. name .. "' listed")
+				load_img(name)
+			end
 		end
 	end
 
