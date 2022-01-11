@@ -139,7 +139,7 @@ local function read(ter_data, zon_data, zone_name)
 	triangles = ter_data.triangles
 	materials = ter_data.materials
 
-	local src = loadfile("data/".. zone_name ..".lua")
+	local src = loadfile(util.ExeDir() .. "/data/".. zone_name ..".lua")
 	if src then
 		data = {}
 		setfenv(src, data)

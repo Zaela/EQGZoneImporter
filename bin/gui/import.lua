@@ -46,7 +46,9 @@ function import_button:action()
 	if not shortname then return end
 	shortname = shortname:lower()
 
-	eqg.CloseDirectory(open_dir)
+	
+	--- eqg.CloseDirectory(open_dir)
+	
 	local s, dir = pcall(eqg.LoadDirectory, eqg_path)
 	if not s then
 		return error_popup(dir)
@@ -84,13 +86,48 @@ function import_button:action()
 
 	DirNames(dir)
 
+	local f = io.open(obj_path .. shortname .. "_light.txt", "rb")
+	if f then		
+		f:close()
+		local lineNumber = 0
+		for line in io.lines(obj_path .. shortname .. "_light.txt") do
+			lineNumber = lineNumber + 1
+			lines = Split(line, " ")
+			
+			table.insert(light_data, {name = lines[1],
+			x = lines[2], y = lines[3], z = lines[4],
+			r = lines[5], g = lines[5], b = lines[7],
+			radius = lines[8]})
+		end
+		log_write("Added " .. #light_data .. " lights based on " .. shortname .. "_light.txt")
+	end
+
+	local regions = {}
+	local f = io.open(obj_path .. shortname .. "_region.txt", "rb")
+	if f then		
+		f:close()
+		local lineNumber = 0
+		for line in io.lines(obj_path .. shortname .. "_region.txt") do
+			lineNumber = lineNumber + 1
+			lines = Split(line, " ")
+			-- log_write(#lines)
+			
+			table.insert(regions, {name = lines[1],
+			center_x = lines[2], center_y = lines[3], center_z = lines[4],
+			extent_x = lines[5], extent_y = lines[6], extent_z = lines[7],
+			unknownA = lines[8], unknownB = lines[9], unknownC = lines[10],
+		})
+		end
+		log_write("Added " .. #regions .. " regions based on " .. shortname .. "_region.txt")
+	end
+
 	dir[pos] = {pos = pos, name = ter_name}
 	local ter_data = obj.Import(obj_path, dir, (pos > #dir), shortname)
 	local zon_data = {
 		models = {ter_name},
 		objects = {{name = ter_name:sub(1, -5), id = 0, x = 0, y = 0, z = 0, rotation_x = 0, rotation_y = 0, rotation_z = 0, scale = 1}},
-		regions = {},
-		lights = {},
+		regions = regions,
+		lights = lights,
 	}
 
 	local zon_name = shortname .. ".zon"

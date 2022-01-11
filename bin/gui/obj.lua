@@ -9,7 +9,7 @@ local insert = table.insert
 local pcall = pcall
 
 local function ReadMTL(path)
-	log_write("Attempting to read MTL file from '", path, "'")
+	log_write("Attempting to read MTL file from '" .. path .. "'")
 	local f = assert(io.open(path, "r"))
 	local out = {}
 	local cur
@@ -21,15 +21,15 @@ local function ReadMTL(path)
 			if cmd == "newmtl" then
 				cur = {}
 				out[args] = cur
-				log_write("Found material '", args, "'")
+				log_write("Found material '" .. args .. "'")
 			elseif cmd == "map_kd" then
 				local name = args:match("[%w_]+%.%w+")
 				cur.diffuse_map = name
-				log_write("Found diffuse map name '", name, "'")
+				log_write("Found diffuse map name '" .. name .. "'")
 			elseif cmd == "map_bump" then
 				local name = args:match("[%w_]+%.%w+")
-				cur.normal_map = name
-				log_write("Found normal map name '", name, "'")
+				cur.e_TextureNormal0 = name
+				log_write("Found normal map name '" .. name .. "'")
 			end
 		end
 	end
@@ -48,8 +48,16 @@ local function WriteO(f, obj)
 	f:write("}")
 end
 
+function Split(s, delimiter)
+    result = {};
+    for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+        table.insert(result, match);
+    end
+    return result;
+end
+
 function obj.Import(path, dir, appending, shortname)
-	log_write "Starting IMPORT from OBJ format"
+	log_write("Starting IMPORT from OBJ format from path " .. path)
 	local f = assert(io.open(path, "r"))
 	local fstr = f:read("*a")
 	f:seek("set")
@@ -58,7 +66,7 @@ function obj.Import(path, dir, appending, shortname)
 		line_count = line_count + 1
 	end
 
-	log_write("Found OBJ file with ", line_count, " lines at '", path, "'")
+	log_write("Found OBJ file with " .. line_count .. " lines at '" .. path .. "'")
 
 	local materials = {}
 	local vertices = {}
@@ -72,7 +80,7 @@ function obj.Import(path, dir, appending, shortname)
 	local cur_index
 
 	local cur_obj
-	local data_file = assert(io.open("data/".. shortname ..".lua", "w+"))
+	local data_file = assert(io.open(util.ExeDir() .. "/data/".. shortname ..".lua", "w+"))
 
 	local face = function(str)
 		local a = vert_mem[str]
@@ -96,8 +104,44 @@ function obj.Import(path, dir, appending, shortname)
 	end
 
 	local progress = iup.progressdlg{count = 0, totalcount = line_count, description = "Importing model..."}
-	progress:show()
+	if not util.IsConsole() then		
+		progress:show()
+	end
 
+	local material_flags = {}
+	local shortname = path:match("([%s%w_]+)%.obj$")
+	local fm = io.open(shortname .. "_material.txt", "rb")
+	if fm then
+		fm:close()
+		local lineNumber = 0
+		for line in io.lines(shortname .. "_material.txt") do
+			lineNumber = lineNumber + 1
+			lines = Split(line, " ")
+			if not lines[1]  == "m" and not lines[1] == "e" then
+				error("failed to parse " .. shortname .. "_material.txt:" .. lineNumber .. " unknown definition " .. lines[1])
+			end
+			if lines[1] == "m" then
+				if not #lines == 4 then
+					error("failed to parse " .. shortname .. "_material.txt:" .. lineNumber .. " due to number of entries should be 4, got " .. #lines)
+				end
+				material_flags[lines[2]] = { flag = tonumber(lines[3]), shader = lines[4] }
+			end
+			if lines[1] == "e" then
+				if not #lines == 5 and not #lines == 4 then
+					error("failed to parse " .. shortname .. "_material.txt:" .. lineNumber .. " due to number of entries should be 4 or 5, got " .. #lines)
+				end
+				if #lines == 5 then
+					material_flags[lines[2]][lines[3]] = lines[4] .. " " .. lines[5]
+				end
+				if #lines == 4 then
+					material_flags[lines[2]][lines[3]] = lines[4]
+				end
+			end
+		end
+		log_write("Added " .. #material_flags .. " flags based on " .. shortname .. "_material.txt")
+	end
+
+	local last_material = { flag = 65536, shader = "Opaque_MaxCB1.fx"}
 	for line in f:lines() do
 		local cmd, args = line:match("%s*(%S+)%s([^\n]+)")
 		if cmd and args then
@@ -120,26 +164,40 @@ function obj.Import(path, dir, appending, shortname)
 					end
 				elseif cmd == "usemtl" then
 					cur_index = mat_index[args]
+					
+					last_material = material_flags[args]
+					if not last_material then
+						last_material = { flag = 65536, shader = "Opaque_MaxCB1.fx"}
+					end
+
 					if not cur_index then
 						cur_index = #materials
 						mat_index[args] = cur_index
 						local mat = mat_src[args]
 						if mat then
-							local tbl = {name = args, shader = "Opaque_MaxCB1.fx"}
+							local tbl = {name = args, shader = last_material.shader}
 							if mat.diffuse_map then
 								local v = mat.diffuse_map:lower()
 								tbl[1] = {name = "e_TextureDiffuse0", type = 2, value = v}
 							end
-							if mat.normal_map then
-								local v = mat.normal_map:lower()
-								insert(tbl, {name = "e_TextureNormal0", type = 2, value = v})
+							for key, value in pairs(last_material) do
+								if string.sub(key, 1, 2) == "e_" then
+									entries = Split(value, " ")
+									if not #entries == 2 then
+										error("expected two values for " .. key .. ", got " .. #entries)
+									end
+									log_write("adding to ".. args .. " ".. key .. " with value " .. entries[2])
+									insert(tbl, {name = key, type = entries[1], value = entries[2]})
+								end
 							end
 							insert(materials, tbl)
 						end
 					end
+
 					if cur_obj then
 						insert(cur_obj, cur_index)
 					end
+					log_write("Material " .. args .. ": flag=" .. last_material.flag .. ", shader=" .. last_material.shader)
 				elseif cmd == "f" then
 					local v1, v2, v3 = args:match("(%d+/%d*/%d+) (%d+/%d*/%d+) (%d+/%d*/%d+)")
 					if v1 and v2 and v3 then
@@ -149,7 +207,7 @@ function obj.Import(path, dir, appending, shortname)
 							[2] = b,
 							[3] = c,
 							material = cur_index,
-							flag = 65536,
+							flag = last_material.flag,
 						})
 					end
 				elseif cmd == "o" then
@@ -164,7 +222,27 @@ function obj.Import(path, dir, appending, shortname)
 				mat_src = ReadMTL(path:gsub("[^\\/]+%.%w+$", args))
 			end
 		end
-		progress.inc = 1
+		if not util.IsConsole() then 
+			progress.inc = 1
+		end
+	end
+
+
+	for name, flags in pairs(material_flags) do
+		for key, value in pairs(flags) do
+			if string.sub(key, 1, 2) == "e_" then
+				entries = Split(value, " ")
+				if not #entries == 2 then
+					error("expected two values for " .. key .. ", got " .. #entries)
+				end
+				
+				log_write("flags ".. name .. " key "..key..": " .. entries[2])
+				if not mat_src[name] then
+					mat_src[name] = {}
+				end
+				mat_src[name][key] = entries[2]
+			end
+		end
 	end
 
 	f:close()
@@ -177,13 +255,16 @@ function obj.Import(path, dir, appending, shortname)
 	data_file:write("\n")
 	data_file:close()
 
-	if mat_src then
+	if mat_src then		
 		local folder = path:match("^.+[\\/]")
-		log_write("Searching for texture files to import from directory '", folder, "'")
+		if not folder then 
+			folder = "./"
+		end
+		log_write("Searching for texture files to import from directory '" .. folder .. "' (path: " .. path .. ")")
 		local append_pos = appending and (#dir + 2) or (#dir + 1)
 		local load_img = function(name)
 			local mat_path = folder .. name
-			log_write("Attempting to find file '", name, "' at '", mat_path, "'")
+			-- log_write("Attempting to find file '" .. name .. "' at '" .. mat_path .. "'")
 			name = name:lower()
 			local pos
 			for i, ent in ipairs(dir) do
@@ -198,29 +279,41 @@ function obj.Import(path, dir, appending, shortname)
 			end
 			local s, err = pcall(eqg.ImportFlippedImage, mat_path, name, dir, pos)
 			if not s then
-				error_popup(err)
-			else
-				log_write("Imported '", name, "' successfully")
+				if not util.IsConsole() then error(err) end
+				if util.IsConsole() then log_write("Find file '" .. name .. "' failed with error: " .. err) end
+				return
 			end
 		end
 
 		for mat_name, mat in pairs(mat_src) do
-			log_write("Searching for images to import for material '", mat_name, "'")
+			--log_write("Searching for images to import for material '" .. mat_name .. "'")
 			local name = mat.diffuse_map
 			if name then
-				log_write("Material had diffuse map '", name, "' listed")
+				log_write("Material " .. mat_name .. " had diffuse map '" .. name .. "' listed")
 				load_img(name)
 			end
-			name = mat.normal_map
+			name = mat.e_TextureNormal0
 			if name then
-				log_write("Material had normal map '", name, "' listed")
+				log_write("Material " .. mat_name .. " had normal map '" .. name .. "' listed")
+				load_img(name)
+			end
+			name = mat.e_TextureEnvironment0
+			if name then
+				log_write("Material " .. mat_name .. " had environment map '" .. name .. "' listed")
+				load_img(name)
+			end
+			name = mat.e_TextureSecond0
+			if name then
+				log_write("Material " .. mat_name .. " had second diffuse map '" .. name .. "' listed")
 				load_img(name)
 			end
 		end
 	end
 
-	progress:hide()
-	iup.Destroy(progress)
+	if not util.IsConsole()	then 
+		progress:hide()
+		iup.Destroy(progress)
+	end
 
 	log_write "Import from OBJ complete"
 
@@ -266,7 +359,7 @@ function obj.Export()
 		end
 
 		local f = assert(io.open(folder .. zonename .. ".mtl", "w+"))
-		f:write("# Exported by EQG Zone Importer v1.1\n\n")
+		f:write("# Exported by EQG Zone Importer v1.5\n\n")
 		for i, mat in ipairs(materials) do
 			f:write("newmtl ", mat.name, "\n")
 			f:write("Ka 1.000000 1.000000 1.000000\nKd 1.000000 1.000000 1.000000\nd 1.000000\nillum 2\n")
@@ -285,7 +378,7 @@ function obj.Export()
 		f:close()
 
 		f = assert(io.open(folder .. zonename .. ".obj", "w+"))
-		f:write("# Exported by EQG Zone Importer v1.1\n")
+		f:write("# Exported by EQG Zone Importer v1.5\n")
 		f:write("mtllib ", zonename, ".mtl\no ", zonename, "\n")
 
 		if vertices.binary then

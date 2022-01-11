@@ -15,8 +15,8 @@ typedef std::int32_t	int32;
 typedef std::uint64_t	uint64;
 typedef std::int64_t	int64;
 
-#ifdef _WIN32
-#define snprintf _snprintf
-#endif
+//#ifdef _WIN32
+//#define snprintf _snprintf
+//#endif
 
 #endif//TYPES_H

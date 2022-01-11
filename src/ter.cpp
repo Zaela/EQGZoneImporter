@@ -10,8 +10,12 @@ namespace TER
 		Header* header = (Header*)ptr;
 		uint32 pos = Header::SIZE;
 
-		if (header->version != 2)
-			return luaL_argerror(L, 1, "unsupported .ter version");
+
+		if (header->version != 2) {
+			char msg[1024];
+			snprintf(msg, 1024, "unsupported .ter version %d, wanted 2", header->version);
+			return luaL_argerror(L, 1, msg);
+		}
 
 		lua_createtable(L, 0, 3); //to return
 
@@ -88,7 +92,7 @@ namespace TER
 		len = Triangle::SIZE * header->triangle_count;
 		block = lua_newuserdata(L, len);
 		memcpy(block, &ptr[pos], len);
-		pos += len;
+		//pos += len;
 		lua_setfield(L, -2, "data");
 
 		lua_setfield(L, -2, "triangles");

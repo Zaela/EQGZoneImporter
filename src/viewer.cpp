@@ -8,6 +8,7 @@ extern std::atomic_flag gRunThread;
 
 namespace Viewer
 {
+
 	void ThreadMain(uint32 w, uint32 h, scene::SAnimatedMesh* anim, std::vector<ImageFile*>* images)
 	{
 		CameraController control;
@@ -154,24 +155,28 @@ namespace Viewer
 	{
 		switch (ev.Key)
 		{
+		case KEY_KEY_W:
 		case KEY_UP:
 			if (ev.PressedDown)
 				mMoveDirection = MOVE_FORWARD;
 			else if (mMoveDirection == MOVE_FORWARD)
 				mMoveDirection = MOVE_NONE;
 			break;
+		case KEY_KEY_S:
 		case KEY_DOWN:
 			if (ev.PressedDown)
 				mMoveDirection = MOVE_BACKWARD;
 			else if (mMoveDirection == MOVE_BACKWARD)
 				mMoveDirection = MOVE_NONE;
 			break;
+		case KEY_KEY_A:
 		case KEY_LEFT:
 			if (ev.PressedDown)
 				mTurnDirection = TURN_LEFT;
 			else if (mTurnDirection == TURN_LEFT)
 				mTurnDirection = TURN_NONE;
 			break;
+		case KEY_KEY_D:
 		case KEY_RIGHT:
 			if (ev.PressedDown)
 				mTurnDirection = TURN_RIGHT;

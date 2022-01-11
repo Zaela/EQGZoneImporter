@@ -121,10 +121,13 @@ local function read(ter_data)
 	triangles = ter_data.triangles
 	vertices = ter_data.vertices
 	materials = ter_data.materials
+	
 end
 
 local function load()
-	if not loaded and triangles then
+	if not loaded and triangles then		
+		ft = io.open(zone_name ..  "_triangles.txt", 'w')
+		
 		loaded = true
 		local count = triangles.binary and triangles.count or #triangles
 		local progress = iup.progressdlg{count = 0, totalcount = count, description = "Loading Triangle data..."}
@@ -134,9 +137,39 @@ local function load()
 		for i = 1, count do
 			list[i] = i
 			progress.inc = 1
+
+			local v1, v2, v3, mat, flag
+			if triangles.binary then
+				v1, v2, v3, mat, flag = util.GetTriangle(triangles, i - 1)
+			else
+				local tri = triangles[i]
+				v1 = tri[1]
+				v2 = tri[2]
+				v3 = tri[3]
+				mat = tri.material
+				flag = tri.flag
+			end
+			mat = materials[mat + 1]
+			matName = "NONE"
+			if mat then
+				matName = mat.name
+			end
+				
+			local x,y,z = 0
+			if vertices.binary then
+				x,y,z = util.GetVertex(vertices, v1)
+			else
+				x = string.format("%.3f", vertices[v1 + 1].x)
+				y = string.format("%.3f", vertices[v1 + 1].y)
+				z = string.format("%.3f", vertices[v1 + 1].z)
+			end
+
+			ft:write(i .. " " .. matName .. " " .. flag .. " " .. string.format("%.3f", x) .. " " .. string.format("%.3f", y) .. " " .. string.format("%.3f", z) .. "\n")
+			ft:flush()
 		end
 		list.autoredraw = "YES"
 		progress:hide()
+		ft:close()
 		iup.Destroy(progress)
 	end
 end
